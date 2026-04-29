@@ -1,6 +1,6 @@
-# Module Status (Phase 0.4 / 0.5)
+# Module Status (Phase 0.4 / 0.5 / 1 / 2)
 
-> Последнее обновление: phase-0 (аудит)  
+> Последнее обновление: **phase-2** (chat, doors, purchasing, language)
 > Статусы: `pending` | `in_progress` | `done` | `blocked` | `DROP`
 
 ---
@@ -9,18 +9,18 @@
 
 | Модуль | Строк | Файлов | Статус | Сложность | Приоритет | Зависит от |
 |---|---|---|---|---|---|---|
-| `base` | 8784 | 23 | pending | XL | 1 | — |
-| `money` | 576 | 5 | pending | M | 2 | base |
-| `jobs` | 789 | 4 | pending | M | 2 | base |
-| `doorsystem` | 2706 | 8 | pending | L | 3 | base |
-| `chat` | 1185 | 8 | pending | M | 3 | base |
-| `hud` | 505 | 4 | pending | M | 3 | base, money, jobs |
+| `base` | 8784 | 23 | **in_progress** (skeleton+API done, weapons/entities pending) | XL | 1 | — |
+| `money` | 576 | 5 | **done** (phase-1) | M | 2 | base |
+| `jobs` | 789 | 4 | **done** (phase-1) | M | 2 | base |
+| `doorsystem` | 2706 | 8 | **in_progress** (phase-2: компоненты+чат-команды; raycast TODO) | L | 3 | base |
+| `chat` | 1185 | 8 | **done** (phase-2: все команды + Razor UI) | M | 3 | base |
+| `hud` | 505 | 4 | **done** (phase-1: HUD.razor) | M | 3 | base, money, jobs |
 | `police` | 1842 | 5 | pending | L | 4 | base, jobs |
 | `f4menu` | 1435 | 7 | pending | L | 4 | base, jobs, money |
 | `f1menu` | 435 | 8 | pending | S | 5 | base |
 | `hitmenu` | 1107 | 7 | pending | M | 5 | base, money |
 | `voting` | 720 | 5 | pending | M | 5 | base |
-| `language` | 879 | 3 | pending | S | 5 | — |
+| `language` | 879 | 3 | **done** (phase-2: en.json + ru.json) | S | 5 | — |
 | `tipjar` | 684 | 4 | pending | S | 5 | base, money |
 | `hungermod` | 566 | 8 | pending | S | 6 | base |
 | `positions` | 450 | 5 | pending | S | 6 | base |
@@ -308,17 +308,37 @@ digraph DarkRP_Modules {
 
 ## Прогресс обновлений
 
-Заполнять при начале работы над модулем:
+```
+[~] base         — phase-1: API skeleton + Hook/ChatCommand registry + Job GameResource
+[x] money        — phase-1: EconomyManager + AddMoney/CanAfford + payday + /give /dropmoney
+[x] jobs         — phase-1: JobManager + /job + слот-чек + AdminLevel/NeedToChangeFrom
+[~] doorsystem   — phase-2: DoorComponent ([Sync]) + DoorManager (HTTP persist) + чат-команды
+                   TODO: raycast в GetLookedAtDoor через PlayerController (phase-3)
+[x] chat         — phase-2: ChatSystem (PM, /w, /y, /me, /ooc, /broadcast, /channel, /radio, /g)
+                   + Chat.razor UI с очередью сообщений и [Rpc.Host] dispatch
+[x] hud          — phase-1: HUD.razor (money, job, salary, hp/ap, arrest, wanted, agenda, hunger)
+[x] language     — phase-2: LanguageSystem (JSON loader) + en.json/ru.json
+[x] purchasing   — phase-2: /buy /buyshipment /buyvehicle /buyammo /price /rpname
+[ ] police       — phase-3
+[ ] f4menu       — phase-1: F4Menu.razor каркас (3 вкладки, покупки = TODO)
+[ ] f1menu       — phase-3
+[ ] hitmenu      — phase-3
+[ ] voting       — phase-3
+[ ] hungermod    — phase-3
+[ ] остальные    — phase-3+
+```
 
-```
-[ ] base         — не начато
-[ ] money        — не начато
-[ ] jobs         — не начато
-[ ] doorsystem   — не начато
-[ ] chat         — не начато
-[ ] hud          — не начато
-[ ] language     — не начато (конвертация .lua → .json)
-[ ] police       — не начато
-[ ] f4menu       — не начато
-[ ] ...
-```
+---
+
+## Phase-2 артефакты
+
+| Файл | Назначение | Lua source |
+|---|---|---|
+| `Code/Modules/Language/LanguageSystem.cs` | JSON-словарь фраз + `Get(key, args)` | `gamemode/languages/sh_*.lua` |
+| `Resources/Localization/en.json` | English phrase table | `sh_english.lua` |
+| `Resources/Localization/ru.json` | Russian phrase table | `sh_russian.lua` |
+| `Code/Modules/Purchasing/PurchasingSystem.cs` | /buy /buyshipment /buyvehicle /buyammo /price /rpname | `sv_purchasing.lua`, `sv_money.lua` |
+| `Code/Modules/Doors/DoorComponent.cs` | `[Sync]` владение, замок, extraOwners | `sh_interface.lua`, `sv_doorvars.lua` |
+| `Code/Modules/Doors/DoorManager.cs` | Загрузка/сохранение в Backend + чат-команды | `sv_doors.lua`, `sv_dooradministration.lua` |
+| `Code/Modules/Chat/ChatSystem.cs` | Все чат-команды чата (PM/whisper/yell/me/ooc/broadcast/radio/g) | `sv_chatcommands.lua` |
+| `Code/UI/Chat.razor` | UI чата + ввод + [Rpc.Host] PlayerSay | `cl_chat.lua` |

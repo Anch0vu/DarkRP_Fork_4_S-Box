@@ -1,0 +1,181 @@
+@* Source: gamemode/modules/chat/cl_chat.lua *@
+@* Lua: chat.AddText / hook.Add("OnPlayerChat", ...) — заменено на Razor *@
+@using System;
+@using System.Linq;
+@using Sandbox;
+@using Sandbox.UI;
+@using SboxDarkRP;
+@inherits PanelComponent
+
+<root>
+    <div class="chat-root">
+        @* ── История сообщений ─────────────────────────────────────────── *@
+        <div class="chat-messages">
+            @foreach ( var msg in ChatBox.Messages.AsEnumerable().Reverse().Take( 12 ).Reverse() )
+            {
+                var faded = msg.Age > ChatBox.FadeAfter && !_isOpen;
+                <div class="chat-line @(faded ? "faded" : "")">
+                    <span class="chat-name" style="color: @ColorToHex( msg.NameColor )">@msg.Name</span>
+                    @if ( !string.IsNullOrEmpty( msg.Text ) )
+                    {
+                        <span class="chat-sep">:</span>
+                        <span class="chat-text" style="color: @ColorToHex( msg.TextColor )">@msg.Text</span>
+                    }
+                </div>
+            }
+        </div>
+
+        @* ── Поле ввода (открывается на Y/U/Enter) ─────────────────────── *@
+        @if ( _isOpen )
+        {
+            <div class="chat-input-row">
+                <span class="chat-input-prefix">@(_isTeam ? "[Team]" : "Say:")</span>
+                <TextEntry @ref="_entry"
+                           Value="@_input"
+                           Value:event="oninput"
+                           OnSubmit="@OnSubmit"
+                           class="chat-input" />
+            </div>
+        }
+    </div>
+</root>
+
+@code {
+    private bool _isOpen = false;
+    private bool _isTeam = false;
+    private string _input = "";
+    private TextEntry? _entry;
+
+    protected override void OnUpdate()
+    {
+        // Lua: hook.Add("PlayerBindPress", ...) — открыть чат на messagemode
+        if ( !_isOpen )
+        {
+            if ( Input.Pressed( "Chat" ) )
+            {
+                Open( false );
+            }
+            else if ( Input.Pressed( "ChatTeam" ) )
+            {
+                Open( true );
+            }
+        }
+        else
+        {
+            if ( Input.EscapePressed )
+            {
+                Close();
+            }
+        }
+    }
+
+    private void Open( bool team )
+    {
+        _isOpen = true;
+        _isTeam = team;
+        _input = "";
+        StateHasChanged();
+        _entry?.Focus();
+    }
+
+    private void Close()
+    {
+        _isOpen = false;
+        _input = "";
+        StateHasChanged();
+    }
+
+    private void OnSubmit()
+    {
+        var text = _input?.Trim() ?? "";
+        if ( !string.IsNullOrEmpty( text ) )
+        {
+            // Lua: GAMEMODE:PlayerSay(ply, text, isTeam)
+            SendChatRpc( text, _isTeam );
+        }
+        Close();
+    }
+
+    [Rpc.Host]
+    public static void SendChatRpc( string text, bool isTeam )
+    {
+        var sender = Rpc.Caller;
+        if ( sender is null ) return;
+
+        // Если начинается со /, передаём в ChatCommandRegistry
+        if ( text.StartsWith( "/" ) )
+        {
+            if ( ChatCommandRegistry.Dispatch( sender, text ) ) return;
+        }
+
+        // Обычное сообщение — рассылаем всем
+        var color = sender.GetJob()?.Color ?? Color.White;
+        foreach ( var conn in Connection.All )
+            ChatMessage.SendToPlayer( conn, color, sender.DisplayName, Color.White, text );
+    }
+
+    private static string ColorToHex( Color c ) =>
+        $"#{(int)(c.r * 255):X2}{(int)(c.g * 255):X2}{(int)(c.b * 255):X2}";
+}
+
+<style>
+    .chat-root {
+        position: absolute;
+        bottom: 80px;
+        left: 30px;
+        width: 600px;
+        flex-direction: column;
+        font-family: Roboto;
+        font-size: 14px;
+    }
+
+    .chat-messages {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+    }
+
+    .chat-line {
+        flex-direction: row;
+        background-color: rgba(0, 0, 0, 0.55);
+        padding: 4px 8px;
+        border-radius: 3px;
+        transition: opacity 0.4s;
+    }
+
+    .chat-line.faded {
+        opacity: 0.35;
+    }
+
+    .chat-name {
+        font-weight: bold;
+        margin-right: 4px;
+    }
+
+    .chat-sep {
+        color: #cccccc;
+        margin-right: 6px;
+    }
+
+    .chat-input-row {
+        flex-direction: row;
+        align-items: center;
+        margin-top: 6px;
+        background-color: rgba(0, 0, 0, 0.75);
+        padding: 6px 10px;
+        border-radius: 4px;
+    }
+
+    .chat-input-prefix {
+        color: #ffcc00;
+        font-weight: bold;
+        margin-right: 8px;
+    }
+
+    .chat-input {
+        flex-grow: 1;
+        color: white;
+        background-color: transparent;
+        border: none;
+    }
+</style>
