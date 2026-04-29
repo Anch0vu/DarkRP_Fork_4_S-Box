@@ -1,0 +1,192 @@
+@* Source: gamemode/modules/f4menu/cl_frame.lua *@
+@* Source: gamemode/modules/f4menu/cl_jobstab.lua *@
+@* Source: gamemode/modules/f4menu/cl_entitiestab.lua *@
+@* Lua: DarkRP.openF4Menu() / DarkRP.closeF4Menu() / DarkRP.toggleF4Menu() *@
+@* Lua: F4-меню открывается по PlayerBindPress (bind F4 / +darkrp_f4) *@
+@using Sandbox;
+@using Sandbox.UI;
+@using SboxDarkRP;
+@inherits PanelComponent
+
+<root>
+    @if ( IsOpen )
+    {
+        <div class="f4-overlay" onclick="@Close">
+            <div class="f4-window" onclick:stopPropagation="true">
+
+                @* ── Заголовок ──────────────────────────────────────────── *@
+                <div class="f4-header">
+                    <span class="f4-title">DarkRP — F4</span>
+                    <button class="f4-close" onclick="@Close">✕</button>
+                </div>
+
+                @* ── Вкладки ────────────────────────────────────────────── *@
+                @* Lua: DarkRP.addF4MenuTab(name, panel, order) *@
+                <div class="f4-tabs">
+                    <button class="f4-tab @ActiveTab("jobs")" onclick='@(() => CurrentTab = "jobs")'>Работы</button>
+                    <button class="f4-tab @ActiveTab("entities")" onclick='@(() => CurrentTab = "entities")'>Покупки</button>
+                    <button class="f4-tab @ActiveTab("shipments")" onclick='@(() => CurrentTab = "shipments")'>Оружие</button>
+                </div>
+
+                @* ── Содержимое вкладки ──────────────────────────────────── *@
+                <div class="f4-content">
+
+                    @* ── Вкладка Работы ──────────────────────────────────── *@
+                    @* Lua: cl_jobstab.lua *@
+                    @if ( CurrentTab == "jobs" )
+                    {
+                        var localJob = Connection.Local?.GetJob();
+
+                        <div class="f4-jobs">
+                            @foreach ( var (id, job) in DarkRP.GetAllJobs() )
+                            {
+                                @if ( !job.CanBeSelectedInMenu ) { continue; }
+
+                                var isCurrentJob = localJob?.Id == id;
+                                var playerCount = JobManager.CountPlayersOnJob( id );
+                                var isFull = job.MaxPlayers > 0 && playerCount >= job.MaxPlayers;
+
+                                <div class="f4-job @(isCurrentJob ? "f4-job--current" : "") @(isFull ? "f4-job--full" : "")"
+                                     onclick="@(() => SelectJob(id))"
+                                     style="border-left: 4px solid @ColorToHex(job.Color)">
+
+                                    <div class="f4-job-name" style="color: @ColorToHex(job.Color)">
+                                        @job.Name
+                                        @if ( isCurrentJob ) { <span class="f4-job-badge">✓ текущая</span> }
+                                        @if ( job.AdminLevel > 0 ) { <span class="f4-job-badge f4-badge-admin">★ Admin</span> }
+                                    </div>
+
+                                    <div class="f4-job-desc">@job.Description</div>
+
+                                    <div class="f4-job-meta">
+                                        <span>💰 @DarkRP.FormatMoney(job.Salary)/д.</span>
+                                        @if ( job.MaxPlayers > 0 )
+                                        {
+                                            <span class="@(isFull ? "f4-meta-full" : "")">
+                                                👥 @playerCount/@job.MaxPlayers
+                                            </span>
+                                        }
+                                        @if ( job.HasGunLicense ) { <span>🔫 Лицензия</span> }
+                                        @if ( job.IsCP ) { <span>🚔 CP</span> }
+                                    </div>
+
+                                    @if ( job.Weapons.Count > 0 )
+                                    {
+                                        <div class="f4-job-weapons">
+                                            Оружие: @string.Join(", ", job.Weapons)
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+
+                    @* ── Вкладка Покупки (Entity) ─────────────────────────── *@
+                    @* Lua: cl_entitiestab.lua *@
+                    @else if ( CurrentTab == "entities" )
+                    {
+                        var localConn = Connection.Local;
+                        var currentJobId = localConn?.GetDarkRPComponent()?.JobId ?? "";
+                        var money = localConn?.GetMoney() ?? 0;
+
+                        <div class="f4-entities">
+                            @foreach ( var (id, ent) in DarkRP.GetAllBuyableEntities() )
+                            {
+                                var canBuy = ent.AllowedJobs.Count == 0 || ent.AllowedJobs.Contains( currentJobId );
+                                var canAfford = money >= ent.Price;
+
+                                <div class="f4-entity @(!canBuy ? "f4-entity--locked" : "") @(!canAfford ? "f4-entity--broke" : "")"
+                                     onclick="@(() => BuyEntity(id))">
+                                    <span class="f4-entity-name">@ent.Name</span>
+                                    <span class="f4-entity-price">@DarkRP.FormatMoney(ent.Price)</span>
+                                    @if ( !canBuy ) { <span class="f4-badge-locked">🔒 Только для определённых работ</span> }
+                                </div>
+                            }
+                            @if ( !DarkRP.GetAllBuyableEntities().Any() )
+                            {
+                                <div class="f4-empty">Нет доступных покупок.</div>
+                            }
+                        </div>
+                    }
+
+                    @* ── Вкладка Оружие (Shipments) ──────────────────────── *@
+                    @else if ( CurrentTab == "shipments" )
+                    {
+                        var localConn = Connection.Local;
+                        var currentJobId = localConn?.GetDarkRPComponent()?.JobId ?? "";
+                        var money = localConn?.GetMoney() ?? 0;
+
+                        <div class="f4-shipments">
+                            @foreach ( var (id, ship) in DarkRP.GetAllShipments() )
+                            {
+                                var canBuy = ship.AllowedJobs.Count == 0 || ship.AllowedJobs.Contains( currentJobId );
+
+                                <div class="f4-shipment @(!canBuy ? "f4-entity--locked" : "")"
+                                     onclick="@(() => BuyShipment(id))">
+                                    <span class="f4-entity-name">@ship.Name</span>
+                                    <div class="f4-shipment-meta">
+                                        <span>Ящик: @DarkRP.FormatMoney(ship.Price) (@ship.Amount шт.)</span>
+                                        @if ( ship.SeparatelyBuyable )
+                                        {
+                                            <span>По одному: @DarkRP.FormatMoney(ship.SeparatePrice)</span>
+                                        }
+                                    </div>
+                                    @if ( !canBuy ) { <span class="f4-badge-locked">🔒</span> }
+                                </div>
+                            }
+                            @if ( !DarkRP.GetAllShipments().Any() )
+                            {
+                                <div class="f4-empty">Нет доступного оружия.</div>
+                            }
+                        </div>
+                    }
+
+                </div>
+
+                @* ── Баланс игрока ──────────────────────────────────────── *@
+                <div class="f4-footer">
+                    Баланс: <strong>@DarkRP.FormatMoney( Connection.Local?.GetMoney() ?? 0 )</strong>
+                </div>
+
+            </div>
+        </div>
+    }
+</root>
+
+@code {
+    public bool IsOpen { get; private set; } = false;
+    private string CurrentTab = "jobs";
+
+    protected override void OnUpdate()
+    {
+        // Lua: hook.Add("PlayerBindPress", "DarkRPF4Bind", ...)
+        if ( Input.Pressed( "F4" ) )
+            Toggle();
+    }
+
+    public void Open() => IsOpen = true;
+    public void Close() => IsOpen = false;
+    public void Toggle() => IsOpen = !IsOpen;
+
+    private string ActiveTab( string tab ) => CurrentTab == tab ? "f4-tab--active" : "";
+
+    private void SelectJob( string jobId )
+    {
+        // Lua: RunConsoleCommand("darkrp_changeteam", jobId)
+        // TODO: Rpc.Host вызов к JobManager.TryChangeJob (phase-2)
+        Close();
+    }
+
+    private void BuyEntity( string entityId )
+    {
+        // TODO: Rpc.Host вызов к PurchasingSystem (phase-2)
+    }
+
+    private void BuyShipment( string shipmentId )
+    {
+        // TODO: Rpc.Host вызов к PurchasingSystem (phase-2)
+    }
+
+    private static string ColorToHex( Color c ) =>
+        $"#{(int)(c.r * 255):X2}{(int)(c.g * 255):X2}{(int)(c.b * 255):X2}";
+}
