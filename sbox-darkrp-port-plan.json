@@ -1,0 +1,404 @@
+{
+  "project": "sbox-darkrp-port",
+  "version": "1.0",
+  "description": "Порт ванильного DarkRP (Garry's Mod, Lua, ~50k строк) на S&Box (C#). Источник: https://github.com/Anch0vu/DarkRP_Fork_4_S-Box (форк FPtje/DarkRP). Цель: создать DarkRP-подобную базу на C# с API-фасадом, мимикрирующим под Lua DarkRP, чтобы Lua-разработчик с 7-летним опытом мог писать код, не изучая C# глубоко.",
+
+  "context": {
+    "source_repo": "https://github.com/Anch0vu/DarkRP_Fork_4_S-Box",
+    "working_mode": "in-place — порт делается в том же репозитории, в новой ветке csharp-port. Lua-исходники в gamemode/, entities/, content/ остаются как read-only reference. Весь C# код пишется в новых папках Code/, Resources/, Docs/.",
+    "branch_strategy": "Создать ветку csharp-port от master. Все коммиты порта идут в неё. master не трогать.",
+    "do_not_modify": ["gamemode/", "entities/", "content/", "darkrp.txt", "glualint.json", "icon24.png", "logo.png", "DON'T TOUCH ANY OF THESE FILES.txt"],
+    "source_lang": "Lua (Garry's Mod)",
+    "target_lang": "C# 12 (.NET 8, S&Box)",
+    "source_size": {
+      "files": 340,
+      "lines": 50545,
+      "modules": 32,
+      "entities": 20,
+      "weapons": 23,
+      "unique_hooks": 107,
+      "net_messages": 83
+    },
+    "sbox_docs": [
+      "https://sbox.game/dev/doc/scene/components/",
+      "https://sbox.game/dev/doc/scene/components/component-methods",
+      "https://sbox.game/dev/doc/the-scene-system/gameobject-systems/",
+      "https://sbox.game/dev/doc/systems/networking-multiplayer/rpc-messages/",
+      "https://sbox.game/dev/doc/systems/networking-multiplayer/sync-properties/",
+      "https://sbox.game/dev/doc/systems/networking-multiplayer/networked-objects/",
+      "https://sbox.game/dev/doc/systems/networking-multiplayer/ownership/"
+    ],
+    "team": {
+      "lead": "Anch0vu (admin, RU)",
+      "coder": "Lua-разработчик, 7 лет опыта, C# почти не знает, нужна обёртка-фасад под привычный DarkRP API",
+      "mapper": "Делает rp_NY_city + новые дома и районы под S&Box"
+    },
+    "constraints": [
+      "Кодеру писать максимально как в Lua DarkRP — фасад DarkRP.AddJob, hook.Add, ply:addMoney должен существовать на C#",
+      "Razor UI обязателен (S&Box не имеет Derma)",
+      "Нет встроенной MySQL — БД через HTTP API или S&Box Services",
+      "S&Box Source 2 — модели и карты переделываются маппером",
+      "Античит-логику переписывать с нуля под server-authoritative модель"
+    ]
+  },
+
+  "deliverables": {
+    "docs": [
+      "Docs/audit.md",
+      "Docs/api-mapping.md",
+      "Docs/hooks-catalog.md",
+      "Docs/migration-guide-for-lua-devs.md",
+      "Docs/module-status.md"
+    ],
+    "code_skeleton": [
+      "Code/DarkRP/DarkRP.cs",
+      "Code/DarkRP/Hook.cs",
+      "Code/DarkRP/PlayerExtensions.cs",
+      "Code/DarkRP/Job.cs",
+      "Code/DarkRP/Notify.cs",
+      "Code/DarkRP/ChatCommand.cs",
+      "Code/Systems/JobManager.cs",
+      "Code/Systems/EconomyManager.cs",
+      "Code/UI/HUD.razor",
+      "Code/UI/F4Menu.razor"
+    ]
+  },
+
+  "phases": [
+    {
+      "id": "phase-0",
+      "name": "Аудит исходника",
+      "duration_estimate": "3-5 дней",
+      "human_review_required": true,
+      "tasks": [
+        {
+          "id": "0.1",
+          "title": "Полный обзор репозитория",
+          "actions": [
+            "Создать новую ветку csharp-port от master (если ещё не создана)",
+            "Построить дерево gamemode/ и entities/ с размерами файлов прямо из текущей рабочей копии",
+            "Создать папку Docs/, записать структуру в Docs/audit.md"
+          ]
+        },
+        {
+          "id": "0.2",
+          "title": "Каталог хуков",
+          "actions": [
+            "Найти все hook.Add(...) в gamemode/ и entities/, извлечь имя хука, файл, описание",
+            "Сгруппировать по типу (Player, Entity, Gamemode, Custom DarkRP)",
+            "Для каждого хука записать в Docs/hooks-catalog.md: Lua-сигнатура → предлагаемый C# эквивалент (Component method / Event / Custom DarkRP.Hook)"
+          ]
+        },
+        {
+          "id": "0.3",
+          "title": "Каталог DarkRP API",
+          "actions": [
+            "Найти все DarkRP.* функции (addJob, createEntity, createShipment, addFood, defineChatCommand, notify и т.д.)",
+            "Для каждой записать в Docs/api-mapping.md: Lua-сигнатура → C# эквивалент с примером использования",
+            "Записать playerMeta и entityMeta методы (ply:addMoney, ply:getJobTable и т.д.) → Extension methods на Player"
+          ]
+        },
+        {
+          "id": "0.4",
+          "title": "Каталог сетевых сообщений",
+          "actions": [
+            "Найти все net.Receive и util.AddNetworkString",
+            "Записать имя сообщения, направление (cl→sv / sv→cl), payload, обработчик",
+            "Предложить замену: [Rpc.Broadcast] / [Rpc.Owner] / [Rpc.Host] / [Sync] property"
+          ]
+        },
+        {
+          "id": "0.5",
+          "title": "Классификация модулей",
+          "actions": [
+            "Заполнить Docs/module-status.md таблицу со статусом каждого модуля: KEEP / REWRITE / DROP",
+            "Для KEEP/REWRITE указать оценку сложности (S/M/L/XL) и зависимости от других модулей",
+            "Построить граф зависимостей модулей (DOT-формат)"
+          ],
+          "module_classification": {
+            "DROP": [
+              {"name": "fadmin", "lines": 7951, "reason": "Админка S&Box строится через permission system, не через FAdmin"},
+              {"name": "fpp", "lines": 4577, "reason": "Falco Prop Protection — нужна своя ownership система через S&Box Network.Owner"},
+              {"name": "dermaskin", "lines": 249, "reason": "Derma не существует в S&Box, всё через Razor"},
+              {"name": "workarounds", "lines": 421, "reason": "Патчи для багов GMod, не нужны"},
+              {"name": "cppi", "lines": 56, "reason": "Мёртвый API"},
+              {"name": "libraries/mysqlite", "lines": "?", "reason": "MySQL библиотека для GMod"},
+              {"name": "libraries/sh_cami.lua", "lines": "?", "reason": "CAMI permission framework"}
+            ],
+            "REWRITE_CORE": [
+              {"name": "base", "lines": 8784, "complexity": "XL", "priority": 1, "depends_on": []},
+              {"name": "money", "lines": 576, "complexity": "M", "priority": 2, "depends_on": ["base"]},
+              {"name": "jobs", "lines": 789, "complexity": "M", "priority": 2, "depends_on": ["base"]},
+              {"name": "doorsystem", "lines": 2706, "complexity": "L", "priority": 3, "depends_on": ["base"]},
+              {"name": "chat", "lines": 1185, "complexity": "M", "priority": 3, "depends_on": ["base"]},
+              {"name": "hud", "lines": 505, "complexity": "M", "priority": 3, "depends_on": ["base", "money", "jobs"]}
+            ],
+            "REWRITE_GAMEPLAY": [
+              {"name": "police", "lines": 1842, "complexity": "L", "priority": 4, "depends_on": ["base", "jobs"]},
+              {"name": "f4menu", "lines": 1435, "complexity": "L", "priority": 4, "depends_on": ["base", "jobs", "money"]},
+              {"name": "f1menu", "lines": 435, "complexity": "S", "priority": 5, "depends_on": ["base"]},
+              {"name": "hitmenu", "lines": 1107, "complexity": "M", "priority": 5, "depends_on": ["base", "money"]},
+              {"name": "voting", "lines": 720, "complexity": "M", "priority": 5, "depends_on": ["base"]},
+              {"name": "language", "lines": 879, "complexity": "S", "priority": 5, "depends_on": []},
+              {"name": "tipjar", "lines": 684, "complexity": "S", "priority": 5, "depends_on": ["base", "money"]},
+              {"name": "hungermod", "lines": 566, "complexity": "S", "priority": 6, "depends_on": ["base"]},
+              {"name": "positions", "lines": 450, "complexity": "S", "priority": 6, "depends_on": ["base"]},
+              {"name": "fspectate", "lines": 687, "complexity": "S", "priority": 7, "depends_on": ["base"]},
+              {"name": "events", "lines": 237, "complexity": "S", "priority": 7, "depends_on": ["base"]},
+              {"name": "animations", "lines": 189, "complexity": "S", "priority": 7, "depends_on": ["base"]},
+              {"name": "afk", "lines": 230, "complexity": "S", "priority": 7, "depends_on": ["base"]},
+              {"name": "sleep", "lines": 302, "complexity": "S", "priority": 7, "depends_on": ["base"]},
+              {"name": "hobo", "lines": 40, "complexity": "S", "priority": 7, "depends_on": ["base", "jobs"]},
+              {"name": "medic", "lines": 16, "complexity": "S", "priority": 7, "depends_on": ["base", "jobs"]},
+              {"name": "deathpov", "lines": 44, "complexity": "S", "priority": 7, "depends_on": ["base"]},
+              {"name": "chatindicator", "lines": 88, "complexity": "S", "priority": 7, "depends_on": ["chat"]},
+              {"name": "darkrpmessages", "lines": 26, "complexity": "S", "priority": 7, "depends_on": []},
+              {"name": "playerscale", "lines": 33, "complexity": "S", "priority": 7, "depends_on": ["base"]},
+              {"name": "logging", "lines": 97, "complexity": "S", "priority": 7, "depends_on": ["base"]}
+            ]
+          }
+        },
+        {
+          "id": "0.6",
+          "title": "Каталог entities/weapons",
+          "actions": [
+            "Перечислить все 20 entities из entities/entities/ с описанием",
+            "Перечислить все 23 weapons из entities/weapons/ с описанием",
+            "Для каждого предложить целевой Component/Prefab",
+            "Пометить какие требуют моделей/анимаций (блокеры на artist)"
+          ]
+        }
+      ]
+    },
+
+    {
+      "id": "phase-1",
+      "name": "Скелет проекта и API-фасад",
+      "duration_estimate": "1-2 недели",
+      "human_review_required": true,
+      "depends_on": ["phase-0"],
+      "tasks": [
+        {
+          "id": "1.1",
+          "title": "Создать структуру папок S&Box проекта",
+          "structure": {
+            "Code/": {
+              "DarkRP/": "API-фасад (статика, мимикрия Lua DarkRP)",
+              "Modules/": "Порты модулей, по одному файлу/папке на модуль",
+              "Systems/": "GameObjectSystem-менеджеры (JobManager, EconomyManager)",
+              "Entities/": "Component'ы для бывших Lua entities (printers, drugs, food)",
+              "Weapons/": "Component'ы для SWEP'ов",
+              "UI/": "Razor-компоненты (HUD.razor, F4Menu.razor, Chat.razor)",
+              "Player/": "PlayerController, PlayerExtensions"
+            },
+            "Resources/": {
+              "Jobs/": "Job GameResource ассеты (.job)",
+              "Shipments/": "Shipment GameResource ассеты",
+              "Entities/": "Entity GameResource ассеты"
+            },
+            "Docs/": "Документация (генерируется на phase-0)"
+          }
+        },
+        {
+          "id": "1.2",
+          "title": "DarkRP.Hook — система хуков",
+          "spec": {
+            "lua_api": "hook.Add(eventName, identifier, callback)",
+            "csharp_api": "DarkRP.Hook.Add(eventName, identifier, callback) и [DarkRPHook(eventName)] атрибут",
+            "implementation": "Статический реестр Dictionary<string, List<HookHandler>>, метод Hook.Run(name, params object[] args), автосбор методов с атрибутом [DarkRPHook] через рефлексию при старте",
+            "events_to_emit": [
+              "PlayerInitialSpawn",
+              "PlayerSpawn",
+              "PlayerDeath",
+              "PlayerDisconnected",
+              "PlayerSay",
+              "PlayerChangedJob",
+              "PlayerArrested",
+              "PlayerUnArrested",
+              "PlayerWanted",
+              "PlayerUnWanted",
+              "PlayerBoughtEntity",
+              "PlayerBoughtShipment",
+              "EntityTakeDamage",
+              "OnPlayerChat"
+            ]
+          }
+        },
+        {
+          "id": "1.3",
+          "title": "Player extensions",
+          "spec": {
+            "target_class": "Sandbox.Player или PlayerController",
+            "methods": [
+              "AddMoney(int amount)",
+              "GetMoney() → int",
+              "CanAfford(int amount) → bool",
+              "SetMoney(int amount)",
+              "GetJob() → Job",
+              "SetJob(string jobId)",
+              "IsCP() → bool — мэр/полиция/SWAT",
+              "IsArrested() → bool",
+              "IsWanted() → bool",
+              "Notify(string message, NotifyType type = Generic, float duration = 5f)",
+              "GetWallet() → int",
+              "GetBankMoney() → int"
+            ],
+            "implementation": "Extension methods + [Sync] свойства на PlayerController (Money, JobId, IsArrested, IsWanted)"
+          }
+        },
+        {
+          "id": "1.4",
+          "title": "Job — GameResource",
+          "spec": {
+            "file": "Code/DarkRP/Job.cs",
+            "code_template": "[GameResource(\"DarkRP Job\", \"job\", \"DarkRP job definition\", Icon = \"work\")] public class Job : GameResource { [Property] public string Id { get; set; } [Property] public string Name { get; set; } [Property] public Color Color { get; set; } [Property] public int Salary { get; set; } [Property] public int MaxPlayers { get; set; } [Property] public List<string> Weapons { get; set; } [Property] public string Model { get; set; } [Property] public bool VoteRequired { get; set; } [Property] public string Description { get; set; } [Property] public bool IsCP { get; set; } [Property] public bool IsBoss { get; set; } }",
+            "static_api": "DarkRP.AddJob(Job job), DarkRP.GetJob(string id), DarkRP.GetAllJobs()"
+          }
+        },
+        {
+          "id": "1.5",
+          "title": "Чат-команды",
+          "spec": {
+            "lua_api": "DarkRP.defineChatCommand(name, callback)",
+            "csharp_api": "[ChatCommand(\"/buygun\")] static void Cmd(Player ply, string[] args) или DarkRP.AddChatCommand(name, callback)",
+            "implementation": "Атрибутный реестр + парсинг через хук PlayerSay"
+          }
+        },
+        {
+          "id": "1.6",
+          "title": "БД-абстракция",
+          "spec": {
+            "interface": "DarkRP.DB.SetPlayerData<T>(long steamId, string key, T value), DarkRP.DB.GetPlayerData<T>(long steamId, string key)",
+            "implementation_options": [
+              "Вариант A: HTTP REST API на стороне (Go/Node/C# backend) + Http.RequestAsync",
+              "Вариант B: S&Box Services (Cloud key-value) — требует подтверждения от Anch0vu о привязке к Facepunch инфраструктуре",
+              "Вариант C: SQLite файл локально на сервере (для тестов)"
+            ],
+            "decision_required_from_human": "Какой backend использовать для БД на проде"
+          }
+        }
+      ]
+    },
+
+    {
+      "id": "phase-2",
+      "name": "Порт core-модулей",
+      "duration_estimate": "3-4 недели",
+      "human_review_required": true,
+      "depends_on": ["phase-1"],
+      "approach": "Один модуль = одна сессия Claude Code. Алгоритм: (1) прочитать все .lua файлы модуля, (2) построить map функций/хуков, (3) написать C# эквивалент, (4) обновить Docs/module-status.md",
+      "modules_in_order": [
+        {"name": "base", "subset": "core API only — sh_createitems, sh_commands, sh_playerclass, sv_data, sv_purchasing"},
+        {"name": "money"},
+        {"name": "jobs"},
+        {"name": "language", "note": "Конвертировать .lua локализации в JSON в Resources/Localization/"},
+        {"name": "doorsystem"},
+        {"name": "chat"},
+        {"name": "hud", "note": "Razor компонент"}
+      ],
+      "per_module_checklist": [
+        "Прочитать все .lua файлы модуля",
+        "Найти все hook.Add — переписать как [DarkRPHook] методы",
+        "Найти все net.Receive — переписать как [Rpc.*] или [Sync]",
+        "Найти все DarkRP.* регистрации — внести в API-фасад",
+        "Найти все Derma панели — переписать на Razor",
+        "Прогнать dotnet build, исправить ошибки",
+        "Записать Lua файлы → C# файлы соответствие в Docs/module-status.md"
+      ]
+    },
+
+    {
+      "id": "phase-3",
+      "name": "Порт UI и геймплейных модулей",
+      "duration_estimate": "1-2 месяца",
+      "depends_on": ["phase-2"],
+      "tasks_overview": "F4 menu (Razor), F1 menu (Razor), police/wanted/arrest, hitmenu, voting, остальные мелкие модули (afk, sleep, hungermod, fspectate и т.д.)"
+    },
+
+    {
+      "id": "phase-4",
+      "name": "Entities и Weapons",
+      "duration_estimate": "1-2 месяца",
+      "depends_on": ["phase-2"],
+      "blockers": ["Требуются модели и анимации в Source 2 формате — зависит от наличия contentartist в команде"],
+      "priority_entities": [
+        "money_printer",
+        "spawned_money",
+        "spawned_weapon",
+        "spawned_shipment",
+        "spawned_food",
+        "drug_lab",
+        "gunlab",
+        "microwave"
+      ]
+    }
+  ],
+
+  "execution_rules_for_claude_code": [
+    "Перед началом каждой phase читать Docs/audit.md и Docs/module-status.md",
+    "После каждого модуля обновлять Docs/module-status.md (статус: pending / in_progress / done / blocked)",
+    "Никогда не редактировать gamemode/, entities/, content/ — только читать. Все правки в Code/, Resources/, Docs/",
+    "Любое непонимание API S&Box → читать docs из context.sbox_docs перед попыткой кодить",
+    "При портировании сохранять оригинальные имена методов в комментариях: // Lua: ply:addMoney(amount)",
+    "Каждый созданный C# файл начинается с file-header комментария: какой Lua файл является источником и что в него входило",
+    "После каждого commit-batch запускать dotnet build (если доступен в окружении) и фиксить ошибки до зелёного билда",
+    "При обнаружении блокеров (нужна модель, нужен contentartist, нужно решение от human) — записывать в Docs/blockers.md и продолжать другие задачи",
+    "Кодеру писать в стиле, имитирующем Lua DarkRP API. Не использовать фичи C# которые сильно отличаются от Lua-привычек (LINQ ок, async ок, но избегать сложных дженериков и интерфейсов в публичном API фасада)",
+    "Все public API методы документировать XML-комментариями с примерами и Lua-эквивалентом"
+  ],
+
+  "human_decision_points": [
+    {
+      "id": "decision-1",
+      "phase": "phase-1",
+      "question": "Какой backend использовать для БД? (HTTP REST на своей стороне / S&Box Services / SQLite)",
+      "blocking": true
+    },
+    {
+      "id": "decision-2",
+      "phase": "phase-0",
+      "question": "Юридическая верификация — разрешение от Octothorp на Lua-форк 2022 покрывает ли порт в другой движок?",
+      "blocking": true,
+      "note": "Текущая база — ванильный FPtje/DarkRP под MIT, что окей. Но если в будущем планируется добавлять модули из Доброграда, то нужно подтверждение."
+    },
+    {
+      "id": "decision-3",
+      "phase": "phase-1",
+      "question": "Использовать namespace DarkRP (статика как в Lua) или DarkRP.Sandbox / собственный?",
+      "blocking": false,
+      "default": "Использовать static class DarkRP в namespace SboxDarkRP для максимальной похожести на Lua"
+    },
+    {
+      "id": "decision-4",
+      "phase": "phase-2",
+      "question": "Локализация (модуль language) — какие языки в MVP? (RU, EN — обязательно?)",
+      "blocking": false,
+      "default": "RU + EN, остальные позже"
+    }
+  ],
+
+  "success_criteria_mvp": [
+    "Игрок может присоединиться к серверу через S&Box client",
+    "Игрок видит F4-меню с регистрированными работами",
+    "Игрок может выбрать работу через F4 (Citizen, Police, Mayor минимум)",
+    "Зарплата начисляется по таймеру, отображается в HUD",
+    "Игрок может купить eнтитя (printer / weapon shipment) через F4",
+    "Двери можно покупать/продавать (E-меню)",
+    "Чат работает с поддержкой /команд",
+    "Кодер может написать новую работу через 5 строк C# в стиле DarkRP.AddJob(...)",
+    "Кодер может добавить новый хук через [DarkRPHook(\"PlayerSpawn\")] static void X(Player p) {}",
+    "dotnet build зелёный, проект запускается в S&Box editor"
+  ],
+
+  "estimated_total_duration": {
+    "phase-0": "3-5 дней",
+    "phase-1": "1-2 недели",
+    "phase-2": "3-4 недели",
+    "phase-3": "1-2 месяца",
+    "phase-4": "1-2 месяца",
+    "total_mvp": "6-10 недель (до конца phase-2 + минимальные части phase-3)",
+    "total_full": "5-7 месяцев"
+  },
+
+  "first_command_for_claude_code": "Прочитай весь этот JSON-план целиком. Затем выполни phase-0 полностью: создай ветку csharp-port (git checkout -b csharp-port если её нет), создай папку Docs/, сгенерируй Docs/audit.md, Docs/api-mapping.md, Docs/hooks-catalog.md, Docs/module-status.md на основе анализа существующих gamemode/ и entities/ в репозитории. Lua-файлы НЕ ТРОГАТЬ — только читать. По завершении phase-0 сделать коммит со всеми Docs/ файлами и остановиться, ждать ревью от human-developer."
+}
