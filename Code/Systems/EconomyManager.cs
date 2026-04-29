@@ -79,11 +79,21 @@ public sealed class EconomyManager : GameObjectSystem
 		if ( !Networking.IsHost ) return;
 		if ( amount <= 0 ) return;
 
-		// Создаём GameObject с SpawnedMoneyComponent
-		var go = new GameObject();
-		go.WorldPosition = position;
-		go.Name = $"spawned_money_{amount}";
+		var go = new GameObject
+		{
+			Name = $"spawned_money_{amount}",
+			WorldPosition = position,
+			WorldScale = new Vector3( 0.3f, 0.5f, 0.05f ),
+		};
+
+		var renderer = go.Components.Create<ModelRenderer>();
+		renderer.Model = Model.Load( EntitySpawner.BoxModel );
+		renderer.Tint = new Color( 0.2f, 0.8f, 0.2f );
+
+		go.Components.Create<ModelCollider>().Model = renderer.Model;
+		go.Components.Create<Rigidbody>().MassOverride = 1f;
 		go.Components.Create<SpawnedMoneyComponent>().Amount = amount;
+
 		go.NetworkSpawn();
 	}
 
@@ -114,8 +124,8 @@ public sealed class EconomyManager : GameObjectSystem
 
 		ply.AddMoney( -amount );
 
-		// TODO: получить позицию игрока через PlayerController (phase-2)
-		// SpawnMoney( playerPosition, amount );
+		var pos = ply.Pawn?.WorldPosition ?? Vector3.Zero;
+		SpawnMoney( pos + Vector3.Up * 32f, amount );
 		ply.Notify( $"Вы бросили {DarkRP.FormatMoney( amount )}.", NotifyType.Info );
 	}
 
@@ -156,11 +166,4 @@ public sealed class EconomyManager : GameObjectSystem
 	}
 }
 
-/// <summary>
-/// Заглушка для entity денег на полу. Полная реализация — phase-4.
-/// Lua: entities/entities/spawned_money/
-/// </summary>
-public sealed class SpawnedMoneyComponent : Component
-{
-	[Sync] public int Amount { get; set; } = 0;
-}
+// SpawnedMoneyComponent перенесён в Code/Modules/Entities/PickupComponents.cs (phase-4)

@@ -19,28 +19,32 @@
 
 ---
 
-### BLOCKER-2 — Source 2 модели для entities
+### ~~BLOCKER-2 — Source 2 модели для entities~~ ⚠️ ОБХОД (2026-04-29)
 - **Phase**: phase-4
-- **Статус**: OPEN
-- **Проблема**: Все HIGH-приоритетные entities требуют .vmdl моделей в Source 2 формате:
-  - `money_printer` — принтер денег
-  - `spawned_money` — монеты/купюры на полу
-  - `spawned_shipment` — ящик с оружием
-  - `drug_lab` — лаборатория
-  - `gunlab` — оружейная мастерская
-  - `darkrp_tip_jar` — банка чаевых
-  - `darkrp_billboard` — рекламный щит
-- **Кто решает**: mapper/contentartist
-- **Блокирует**: phase-4, финальный геймплей
+- **Статус**: WORKAROUND (вариант C: встроенные примитивы)
+- **Решение**: Используем `models/dev/box.vmdl` / `sphere.vmdl` как placeholder.
+  Цвет настраивается через `ModelRenderer.Tint`, размер — через `WorldScale`.
+  Логика 100% рабочая, визуал — кубики разных цветов.
+- **Реализовано**:
+  - `Code/Modules/Entities/EntitySpawner.cs` — `SpawnPrimitive(...)`
+  - `MoneyPrinterComponent` — серый куб
+  - `SpawnedShipmentComponent` — коричневый куб
+  - `SpawnedWeaponComponent` — серый прямоугольник
+  - `SpawnedAmmoComponent` — жёлтый куб
+  - `SpawnedMoneyComponent` — зелёная плоская плитка
+- **TODO phase-5+**: Заменить `BoxModel` на реальные `.vmdl` когда будут готовы.
 
 ---
 
 ### BLOCKER-3 — Source 2 модели для CS-weapons
-- **Phase**: phase-4
-- **Статус**: OPEN
-- **Проблема**: Все 10 CS-weapons (`weapon_ak472`, `weapon_deagle2`, и т.д.) требуют Source 2 моделей и риггинга/анимаций. DarkRP-специфичные weapons (arrest_stick, lockpick, door_ram) могут переиспользовать базовые S&Box анимации, но нужны уточнения.
+- **Phase**: phase-5
+- **Статус**: OPEN (отложено)
+- **Проблема**: Все 10 CS-weapons требуют Source 2 моделей и риггинга/анимаций.
+- **Текущее решение**: При покупке игрок получает `SpawnedWeaponComponent` пикап (серый куб).
+  При подборе пишется уведомление + вызывается `Hook.Run("playerPickedUpWeapon", ply, weaponClass)` —
+  реальный inventory будет в phase-5 после получения моделей.
 - **Кто решает**: contentartist
-- **Блокирует**: phase-4
+- **Блокирует**: реальную выдачу оружия в инвентарь
 
 ---
 

@@ -1,6 +1,6 @@
-# Module Status (Phase 0.4 / 0.5 / 1 / 2 / 3)
+# Module Status (Phase 0.4 / 0.5 / 1 / 2 / 3 / 4)
 
-> Последнее обновление: **phase-3** (police, hitmenu, mayor/agenda, voting, F1 menu)
+> Последнее обновление: **phase-4** (spawned entities + money_printer + F4 buy RPC)
 > Статусы: `pending` | `in_progress` | `done` | `blocked` | `DROP`
 
 ---
@@ -357,3 +357,16 @@ digraph DarkRP_Modules {
 | `Code/Modules/Mayor/AgendaSystem.cs` | Повестка, комендантский час, лотерея | `police/sv_commands.lua` (mayor section) |
 | `Code/Modules/Voting/VotingSystem.cs` | Голосования: /demote + общий Vote engine | `voting/sv_votes.lua`, `jobs/sv_jobs.lua` |
 | `Code/UI/F1Menu.razor` | F1 справочное меню: Правила / Команды / Работы | `modules/f1menu/` |
+
+---
+
+## Phase-4 артефакты
+
+| Файл | Назначение | Lua source |
+|---|---|---|
+| `Code/Modules/Entities/SpawnedEntityComponent.cs` | Базовый компонент: Owner, prop protection (только владелец+admin), EntityLimits | `entities/entities/*` (общая база) |
+| `Code/Modules/Entities/EntitySpawner.cs` | Хелпер `SpawnPrimitive(pos, type, owner, color, scale, model)` | `ents.Create(...)` |
+| `Code/Modules/Entities/MoneyPrinterComponent.cs` | Принтер денег без взрывов: спавнит SpawnedMoney каждые MinTimer..MaxTimer | `entities/money_printer/init.lua` |
+| `Code/Modules/Entities/PickupComponents.cs` | SpawnedMoney, SpawnedWeapon, SpawnedShipment, SpawnedAmmo (IPressable) | `entities/spawned_*/init.lua` |
+| `PurchasingSystem.CmdBuyEntity` | `/buyentity` — покупка `BuyableEntity` (money_printer и т.д.) | `sv_purchasing.lua` |
+| `F4Menu.razor` | `[Rpc.Host] SelectJobRpc / BuyEntityRpc / BuyShipmentRpc` — реальные вызовы | `cl_jobstab.lua`, `cl_entitiestab.lua` |
