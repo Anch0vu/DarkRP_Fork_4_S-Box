@@ -1,0 +1,109 @@
+# ============================================================
+# s&box / Visual Studio / .NET
+# ============================================================
+
+# Build output
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio / Rider
+.vs/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
+.vscode/
+!.vscode/settings.json.example
+
+# .NET
+*.dll
+*.pdb
+*.exe
+*.cache
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# NuGet
+*.nuget.props
+*.nuget.targets
+packages/
+!**/packages/build/
+
+# Rider
+*.sln.iml
+
+# ============================================================
+# s&box specific
+# ============================================================
+
+# s&box editor caches and compiled assets
+.sbox/
+compiled/
+.cache/
+
+# s&box auto-generated code
+*.generated.cs
+*.g.cs
+GeneratedCode/
+
+# Local s&box project user files
+*.sbproj.local
+*.sbproj.user
+
+# Hot reload / temp
+hot-reload/
+temp/
+
+# ============================================================
+# OS / IDE noise
+# ============================================================
+
+.DS_Store
+Thumbs.db
+desktop.ini
+*~
+.directory
+
+# ============================================================
+# Editor backups / swap files
+# ============================================================
+
+*.swp
+*.swo
+*.bak
+*.tmp
+*.orig
+
+# ============================================================
+# Secrets — НЕ коммитить
+# ============================================================
+
+# Локальные конфиги с ключами/паролями (БД, S&Box auth, прод-эндпоинты)
+secrets.json
+appsettings.Local.json
+appsettings.Production.json
+.env
+.env.local
+.env.*.local
+
+# Дамп БД для тестов
+*.sqlite
+*.sqlite3
+*.db
+
+# ============================================================
+# Lua-исходники остаются read-only — НЕ игнорируем
+# ============================================================
+# (gamemode/, entities/, content/ должны коммититься как было)
+
+# ============================================================
+# Документы порта
+# ============================================================
+# Docs/ коммитим целиком, кроме черновиков
+Docs/drafts/
+Docs/*.draft.md
