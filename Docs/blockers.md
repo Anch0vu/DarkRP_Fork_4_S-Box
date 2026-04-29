@@ -6,16 +6,16 @@
 
 ## Открытые блокеры
 
-### BLOCKER-1 — Выбор backend БД
+### ~~BLOCKER-1 — Выбор backend БД~~ ✅ РЕШЕНО (2026-04-29)
 - **Phase**: phase-1
-- **Статус**: OPEN
-- **Вопрос**: Какой backend использовать для хранения данных игроков (деньги, работа, данные дверей)?
-- **Варианты**:
-  - **A** — HTTP REST API на своей стороне (Go/Node/C#) + `Http.RequestAsync` из S&Box
-  - **B** — S&Box Services (Cloud key-value Facepunch) — нужна привязка к Facepunch инфраструктуре
-  - **C** — Локальный SQLite файл на сервере (только для разработки/тестов)
-- **Кто решает**: Anch0vu
-- **Блокирует**: `Code/Systems/DataManager.cs`, весь phase-2
+- **Статус**: RESOLVED
+- **Решение**: Node.js (Express) + mysql2 → MySQL. S&Box делает HTTP запросы к `Backend/server.js`.
+- **Реализовано**:
+  - `Backend/server.js` — Express сервер
+  - `Backend/db.js` — MySQL пул + авто-создание схемы
+  - `Backend/routes/player.js` — CRUD данных игрока
+  - `Backend/routes/doors.js` — данные дверей
+  - `Code/Systems/DataManager.cs` — C# клиент к API
 
 ---
 

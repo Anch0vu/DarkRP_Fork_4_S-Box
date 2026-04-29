@@ -1,0 +1,132 @@
+@* Source: gamemode/modules/hud/cl_hud.lua *@
+@* Lua: hook.Add("HUDPaint", ...) — заменено на Razor компонент *@
+@using Sandbox;
+@using Sandbox.UI;
+@using SboxDarkRP;
+@inherits PanelComponent
+
+<root>
+    @if ( LocalPlayer is not null )
+    {
+        <div class="hud-root">
+
+            @* ── Деньги / Money ────────────────────────────────────────── *@
+            @* Lua: draw.DrawText(DarkRP.formatMoney(ply:getMoney()), ...) *@
+            <div class="hud-money">
+                <span class="hud-money-icon">💵</span>
+                <span class="hud-money-value">@DarkRP.FormatMoney( LocalPlayer.GetMoney() )</span>
+            </div>
+
+            @* ── Работа / Job ──────────────────────────────────────────── *@
+            @* Lua: draw.DrawText(ply:getJobTable().name, ...) *@
+            @{
+                var job = LocalPlayer.GetJob();
+            }
+            @if ( job is not null )
+            {
+                <div class="hud-job" style="color: @ColorToHex(job.Color)">
+                    @job.Name
+                </div>
+            }
+
+            @* ── Зарплата / Salary ─────────────────────────────────────── *@
+            @if ( job is not null && job.Salary > 0 )
+            {
+                <div class="hud-salary">
+                    Зарплата: @DarkRP.FormatMoney( job.Salary )
+                </div>
+            }
+
+            @* ── Здоровье / Health ─────────────────────────────────────── *@
+            @* Lua: hud рисует health bar *@
+            <div class="hud-health">
+                <div class="hud-health-label">HP</div>
+                <div class="hud-health-bar">
+                    <div class="hud-health-fill" style="width: @GetHealthPercent()%"></div>
+                </div>
+            </div>
+
+            @* ── Бронежилет / Armor ─────────────────────────────────────── *@
+            <div class="hud-armor">
+                <div class="hud-armor-label">AP</div>
+                <div class="hud-armor-bar">
+                    <div class="hud-armor-fill" style="width: @GetArmorPercent()%"></div>
+                </div>
+            </div>
+
+            @* ── Статус: арест / розыск ─────────────────────────────────── *@
+            @* Lua: if ply:isArrested() then draw "ARRESTED" *@
+            @if ( LocalPlayer.IsArrested() )
+            {
+                var comp = LocalPlayer.GetDarkRPComponent();
+                <div class="hud-arrested">
+                    АРЕСТОВАН — @( comp is not null ? $"{(int)comp.ArrestTimeRemaining}с" : "" )
+                </div>
+            }
+            else if ( LocalPlayer.IsWanted() )
+            {
+                var comp = LocalPlayer.GetDarkRPComponent();
+                <div class="hud-wanted">
+                    РАЗЫСКИВАЕТСЯ — @( comp?.WantedReason ?? "" )
+                </div>
+            }
+
+            @* ── Повестка мэра / Agenda ─────────────────────────────────── *@
+            @* Lua: hook.Add("DarkRPVarChanged", "agendaHUD", ...) *@
+            @{
+                var comp2 = LocalPlayer.GetDarkRPComponent();
+                var agenda = comp2?.Agenda ?? "";
+            }
+            @if ( !string.IsNullOrWhiteSpace( agenda ) )
+            {
+                <div class="hud-agenda">
+                    <div class="hud-agenda-title">Повестка:</div>
+                    <div class="hud-agenda-text">@agenda</div>
+                </div>
+            }
+
+            @* ── Голод (hungermod) ──────────────────────────────────────── *@
+            @* Lua: hook.Add("HUDDrawTargetID", "HMHUD", HMHUD) *@
+            @if ( comp2 is not null )
+            {
+                <div class="hud-hunger">
+                    <div class="hud-hunger-label">🍖</div>
+                    <div class="hud-hunger-bar">
+                        <div class="hud-hunger-fill" style="width: @comp2.Hunger%"></div>
+                    </div>
+                </div>
+            }
+
+        </div>
+
+        @* ── Уведомления / Notifications ─────────────────────────────── *@
+        @* Lua: DarkRP.notify → cl_drawfunctions.lua *@
+        <div class="hud-notifications">
+            @foreach ( var n in NotificationQueue.GetActive() )
+            {
+                <div class="hud-notify" style="background: @ColorToHex(n.GetColor().WithAlpha(0.8f))">
+                    @n.Message
+                </div>
+            }
+        </div>
+    }
+</root>
+
+@code {
+    private Connection? LocalPlayer => Connection.Local;
+
+    private float GetHealthPercent()
+    {
+        // TODO: получить HP через PlayerController (phase-2)
+        return 100f;
+    }
+
+    private float GetArmorPercent()
+    {
+        // TODO: получить Armor через PlayerController (phase-2)
+        return 0f;
+    }
+
+    private static string ColorToHex( Color c ) =>
+        $"#{(int)(c.r * 255):X2}{(int)(c.g * 255):X2}{(int)(c.b * 255):X2}";
+}
