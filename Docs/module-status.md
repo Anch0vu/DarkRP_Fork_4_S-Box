@@ -1,6 +1,6 @@
-# Module Status (Phase 0.4 / 0.5 / 1 / 2)
+# Module Status (Phase 0.4 / 0.5 / 1 / 2 / 3)
 
-> Последнее обновление: **phase-2** (chat, doors, purchasing, language)
+> Последнее обновление: **phase-3** (police, hitmenu, mayor/agenda, voting, F1 menu)
 > Статусы: `pending` | `in_progress` | `done` | `blocked` | `DROP`
 
 ---
@@ -15,11 +15,11 @@
 | `doorsystem` | 2706 | 8 | **in_progress** (phase-2: компоненты+чат-команды; raycast TODO) | L | 3 | base |
 | `chat` | 1185 | 8 | **done** (phase-2: все команды + Razor UI) | M | 3 | base |
 | `hud` | 505 | 4 | **done** (phase-1: HUD.razor) | M | 3 | base, money, jobs |
-| `police` | 1842 | 5 | pending | L | 4 | base, jobs |
-| `f4menu` | 1435 | 7 | pending | L | 4 | base, jobs, money |
-| `f1menu` | 435 | 8 | pending | S | 5 | base |
-| `hitmenu` | 1107 | 7 | pending | M | 5 | base, money |
-| `voting` | 720 | 5 | pending | M | 5 | base |
+| `police` | 1842 | 5 | **done** (phase-3: arrest, wanted, lockdown, license, /911) | L | 4 | base, jobs |
+| `f4menu` | 1435 | 7 | **in_progress** (phase-1 skeleton; покупки через Rpc TODO) | L | 4 | base, jobs, money |
+| `f1menu` | 435 | 8 | **done** (phase-3: Rules + Commands + Jobs tabs) | S | 5 | base |
+| `hitmenu` | 1107 | 7 | **done** (phase-3: /hitprice, /requesthit, /cancelhit + hooks) | M | 5 | base, money |
+| `voting` | 720 | 5 | **done** (phase-3: /demote vote, /forcecancelvote) | M | 5 | base |
 | `language` | 879 | 3 | **done** (phase-2: en.json + ru.json) | S | 5 | — |
 | `tipjar` | 684 | 4 | pending | S | 5 | base, money |
 | `hungermod` | 566 | 8 | pending | S | 6 | base |
@@ -319,13 +319,16 @@ digraph DarkRP_Modules {
 [x] hud          — phase-1: HUD.razor (money, job, salary, hp/ap, arrest, wanted, agenda, hunger)
 [x] language     — phase-2: LanguageSystem (JSON loader) + en.json/ru.json
 [x] purchasing   — phase-2: /buy /buyshipment /buyvehicle /buyammo /price /rpname
-[ ] police       — phase-3
-[ ] f4menu       — phase-1: F4Menu.razor каркас (3 вкладки, покупки = TODO)
-[ ] f1menu       — phase-3
-[ ] hitmenu      — phase-3
-[ ] voting       — phase-3
-[ ] hungermod    — phase-3
-[ ] остальные    — phase-3+
+[x] police       — phase-3: PoliceSystem.cs (arrest/unArrest/wanted/unwanted/lockdown/license/911)
+[~] f4menu       — phase-1: F4Menu.razor каркас (3 вкладки, покупки через Rpc TODO phase-4)
+[x] f1menu       — phase-3: F1Menu.razor (Rules + Commands list + Jobs browser)
+[x] hitmenu      — phase-3: HitSystem.cs (hitprice/requesthit/cancelhit + PlayerDeath hooks)
+[x] voting       — phase-3: VotingSystem.cs (/demote vote + /forcecancelvote)
+[x] mayor/agenda — phase-3: AgendaSystem.cs (agenda/addagenda/lockdown/lottery/enterlottery)
+[ ] hungermod    — phase-4
+[ ] tipjar       — phase-4
+[ ] positions    — интегрировано в PoliceSystem (/jailpos)
+[ ] остальные    — phase-4+
 ```
 
 ---
@@ -342,3 +345,15 @@ digraph DarkRP_Modules {
 | `Code/Modules/Doors/DoorManager.cs` | Загрузка/сохранение в Backend + чат-команды | `sv_doors.lua`, `sv_dooradministration.lua` |
 | `Code/Modules/Chat/ChatSystem.cs` | Все чат-команды чата (PM/whisper/yell/me/ooc/broadcast/radio/g) | `sv_chatcommands.lua` |
 | `Code/UI/Chat.razor` | UI чата + ввод + [Rpc.Host] PlayerSay | `cl_chat.lua` |
+
+---
+
+## Phase-3 артефакты
+
+| Файл | Назначение | Lua source |
+|---|---|---|
+| `Code/Systems/PoliceSystem.cs` | Арест, розыск, лицензии, /911, /lockdown, позиции тюрьмы | `sv_init.lua`, `sv_commands.lua` |
+| `Code/Systems/HitSystem.cs` | Заказные убийства: /hitprice, /requesthit, /cancelhit + DarkRPHook | `hitmenu/sv_init.lua` |
+| `Code/Modules/Mayor/AgendaSystem.cs` | Повестка, комендантский час, лотерея | `police/sv_commands.lua` (mayor section) |
+| `Code/Modules/Voting/VotingSystem.cs` | Голосования: /demote + общий Vote engine | `voting/sv_votes.lua`, `jobs/sv_jobs.lua` |
+| `Code/UI/F1Menu.razor` | F1 справочное меню: Правила / Команды / Работы | `modules/f1menu/` |
