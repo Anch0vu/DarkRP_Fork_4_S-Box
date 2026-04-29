@@ -172,19 +172,46 @@
 
     private void SelectJob( string jobId )
     {
-        // Lua: RunConsoleCommand("darkrp_changeteam", jobId)
-        // TODO: Rpc.Host вызов к JobManager.TryChangeJob (phase-2)
+        SelectJobRpc( jobId );
         Close();
+    }
+
+    [Rpc.Host]
+    public static void SelectJobRpc( string jobId )
+    {
+        var sender = Rpc.Caller;
+        if ( sender is null ) return;
+        JobManager.TryChangeJob( sender, jobId );
     }
 
     private void BuyEntity( string entityId )
     {
-        // TODO: Rpc.Host вызов к PurchasingSystem (phase-2)
+        BuyEntityRpc( entityId );
+    }
+
+    [Rpc.Host]
+    public static void BuyEntityRpc( string entityId )
+    {
+        var sender = Rpc.Caller;
+        if ( sender is null ) return;
+        var entity = DarkRP.GetBuyableEntity( entityId );
+        if ( entity is null ) return;
+        PurchasingSystem.CmdBuyEntity( sender, new[] { entity.Name } );
     }
 
     private void BuyShipment( string shipmentId )
     {
-        // TODO: Rpc.Host вызов к PurchasingSystem (phase-2)
+        BuyShipmentRpc( shipmentId );
+    }
+
+    [Rpc.Host]
+    public static void BuyShipmentRpc( string shipmentId )
+    {
+        var sender = Rpc.Caller;
+        if ( sender is null ) return;
+        var shipment = DarkRP.GetShipment( shipmentId );
+        if ( shipment is null ) return;
+        PurchasingSystem.CmdBuyShipment( sender, new[] { shipment.Name } );
     }
 
     private static string ColorToHex( Color c ) =>
