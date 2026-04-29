@@ -1,0 +1,339 @@
+@* Source: gamemode/modules/f1menu/ — F1 справочное меню DarkRP *@
+@* Lua: GAMEMODE.Config rules + chat commands list *@
+@using Sandbox;
+@using Sandbox.UI;
+@using SboxDarkRP;
+@inherits PanelComponent
+
+<root>
+    @if ( _isOpen )
+    {
+        <div class="f1-overlay" @onclick="Close">
+            <div class="f1-panel" @onclick:stopPropagation="true">
+
+                @* ── Заголовок ─────────────────────────────────────────── *@
+                <div class="f1-header">
+                    <span class="f1-title">DarkRP — Справка (F1)</span>
+                    <button class="f1-close" @onclick="Close">✕</button>
+                </div>
+
+                @* ── Вкладки ───────────────────────────────────────────── *@
+                <div class="f1-tabs">
+                    <button class="f1-tab @(_tab == 0 ? "active" : "")" @onclick="@(() => _tab = 0)">Правила</button>
+                    <button class="f1-tab @(_tab == 1 ? "active" : "")" @onclick="@(() => _tab = 1)">Команды</button>
+                    <button class="f1-tab @(_tab == 2 ? "active" : "")" @onclick="@(() => _tab = 2)">Работы</button>
+                </div>
+
+                <div class="f1-body">
+                    @if ( _tab == 0 )
+                    {
+                        @* ── Правила ─────────────────────────────────── *@
+                        <div class="f1-section-title">Правила сервера</div>
+                        <ol class="f1-rules">
+                            <li>RDM (Random DeathMatch) запрещён.</li>
+                            <li>RDA (Random Arrest) запрещён — арестуй только разыскиваемых.</li>
+                            <li>NLR (New Life Rule) — после смерти не возвращайся на место гибели 3 минуты.</li>
+                            <li>Не мешай чужому рейду без причины.</li>
+                            <li>Уважай других игроков.</li>
+                            <li>Мэр не может принимать незаконные законы.</li>
+                            <li>Не злоупотребляй командой /lockdown.</li>
+                        </ol>
+                    }
+                    else if ( _tab == 1 )
+                    {
+                        @* ── Чат-команды ─────────────────────────────── *@
+                        <div class="f1-section-title">Чат-команды</div>
+                        <div class="f1-search-row">
+                            <TextEntry Value="@_search"
+                                       Value:event="oninput"
+                                       placeholder="Поиск..."
+                                       class="f1-search" />
+                        </div>
+
+                        <div class="f1-cmd-list">
+                            @foreach ( var cmd in FilteredCommands() )
+                            {
+                                <div class="f1-cmd-row">
+                                    <span class="f1-cmd-name">@cmd.Command</span>
+                                    <span class="f1-cmd-desc">@cmd.Description</span>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        @* ── Список работ ─────────────────────────────── *@
+                        <div class="f1-section-title">Доступные работы</div>
+                        <div class="f1-job-list">
+                            @foreach ( var job in DarkRP.GetAllJobs() )
+                            {
+                                <div class="f1-job-row">
+                                    <span class="f1-job-dot" style="background-color: @ColorToHex( job.Color )"></span>
+                                    <span class="f1-job-name">@job.Name</span>
+                                    <span class="f1-job-salary">💵 @DarkRP.FormatMoney( job.Salary )</span>
+                                    @if ( job.MaxPlayers > 0 )
+                                    {
+                                        <span class="f1-job-limit">max @job.MaxPlayers</span>
+                                    }
+                                </div>
+                                @if ( !string.IsNullOrEmpty( job.Description ) )
+                                {
+                                    <div class="f1-job-desc">@job.Description</div>
+                                }
+                            }
+                        </div>
+                    }
+                </div>
+
+            </div>
+        </div>
+    }
+</root>
+
+@code {
+    private bool _isOpen = false;
+    private int _tab = 0;
+    private string _search = "";
+
+    protected override void OnUpdate()
+    {
+        if ( Input.Pressed( "F1" ) )
+        {
+            _isOpen = !_isOpen;
+            StateHasChanged();
+        }
+        if ( _isOpen && Input.EscapePressed )
+            Close();
+    }
+
+    private void Close()
+    {
+        _isOpen = false;
+        StateHasChanged();
+    }
+
+    private sealed class CmdInfo { public string Command { get; init; } = ""; public string Description { get; init; } = ""; }
+
+    private static readonly CmdInfo[] AllCommands =
+    {
+        new() { Command = "/job <name>",         Description = "Сменить работу" },
+        new() { Command = "/toggleown",          Description = "Купить/продать дверь" },
+        new() { Command = "/addowner <name>",    Description = "Добавить совладельца двери" },
+        new() { Command = "/removeowner <name>", Description = "Убрать совладельца" },
+        new() { Command = "/title <text>",       Description = "Название двери" },
+        new() { Command = "/unownalldoors",      Description = "Продать все двери" },
+        new() { Command = "/give <name> <amt>",  Description = "Дать деньги игроку" },
+        new() { Command = "/dropmoney <amt>",    Description = "Бросить деньги на пол" },
+        new() { Command = "/buy <weapon>",       Description = "Купить оружие по одному" },
+        new() { Command = "/buyshipment <name>", Description = "Купить ящик с оружием" },
+        new() { Command = "/buyvehicle <name>",  Description = "Купить транспорт" },
+        new() { Command = "/price <amt>",        Description = "Установить цену на предмет" },
+        new() { Command = "/rpname <name>",      Description = "Задать RP имя" },
+        new() { Command = "/pm <name> <msg>",    Description = "Личное сообщение" },
+        new() { Command = "/w <text>",           Description = "Шёпот (близко)" },
+        new() { Command = "/y <text>",           Description = "Крик (далеко)" },
+        new() { Command = "/me <action>",        Description = "Действие в третьем лице" },
+        new() { Command = "/ooc <text>",         Description = "Out of character чат" },
+        new() { Command = "/radio <text>",       Description = "Сообщение по рации" },
+        new() { Command = "/channel <num>",      Description = "Переключить канал рации (0-100)" },
+        new() { Command = "/g <text>",           Description = "Чат группы (одна работа)" },
+        new() { Command = "/wanted <name> <reason>", Description = "Объявить в розыск (CP)" },
+        new() { Command = "/unwanted <name>",    Description = "Снять розыск (CP)" },
+        new() { Command = "/911 <text>",         Description = "Вызвать полицию" },
+        new() { Command = "/givelicense <name>", Description = "Выдать лицензию (CP)" },
+        new() { Command = "/requestlicense",     Description = "Попросить лицензию" },
+        new() { Command = "/jailpos",            Description = "Сохранить позицию тюрьмы" },
+        new() { Command = "/agenda <text>",      Description = "Установить повестку (мэр)" },
+        new() { Command = "/addagenda <text>",   Description = "Добавить к повестке (мэр)" },
+        new() { Command = "/lockdown",           Description = "Объявить комендантский час (мэр)" },
+        new() { Command = "/unlockdown",         Description = "Завершить комендантский час" },
+        new() { Command = "/lottery <amt>",      Description = "Запустить лотерею (мэр)" },
+        new() { Command = "/enterlottery",       Description = "Участвовать в лотерее" },
+        new() { Command = "/demote <name> <reason>", Description = "Проголосовать за демоут" },
+        new() { Command = "/hitprice <price>",   Description = "Установить цену хита (хитмен)" },
+        new() { Command = "/requesthit <name>",  Description = "Заказать убийство" },
+        new() { Command = "/cancelhit",          Description = "Отменить заказ" },
+        new() { Command = "/broadcast <text>",   Description = "Объявление всем (мэр)" },
+    };
+
+    private IEnumerable<CmdInfo> FilteredCommands() =>
+        string.IsNullOrWhiteSpace( _search )
+            ? AllCommands
+            : AllCommands.Where( c =>
+                c.Command.Contains( _search, System.StringComparison.OrdinalIgnoreCase ) ||
+                c.Description.Contains( _search, System.StringComparison.OrdinalIgnoreCase ) );
+
+    private static string ColorToHex( Color c ) =>
+        $"#{(int)(c.r * 255):X2}{(int)(c.g * 255):X2}{(int)(c.b * 255):X2}";
+}
+
+<style>
+    .f1-overlay {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background-color: rgba(0, 0, 0, 0.65);
+        align-items: center;
+        justify-content: center;
+    }
+
+    .f1-panel {
+        width: 720px;
+        height: 560px;
+        background-color: #1a1a2e;
+        border: 1px solid #444;
+        border-radius: 8px;
+        flex-direction: column;
+        font-family: Roboto;
+    }
+
+    .f1-header {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 18px;
+        background-color: #16213e;
+        border-radius: 8px 8px 0 0;
+    }
+
+    .f1-title {
+        color: #e2b96f;
+        font-size: 18px;
+        font-weight: bold;
+    }
+
+    .f1-close {
+        background-color: transparent;
+        border: none;
+        color: #aaa;
+        font-size: 16px;
+        cursor: pointer;
+    }
+
+    .f1-tabs {
+        flex-direction: row;
+        padding: 0 18px;
+        background-color: #16213e;
+        border-bottom: 1px solid #333;
+    }
+
+    .f1-tab {
+        padding: 8px 18px;
+        background-color: transparent;
+        border: none;
+        color: #aaa;
+        font-size: 13px;
+        cursor: pointer;
+    }
+
+    .f1-tab.active {
+        color: #e2b96f;
+        border-bottom: 2px solid #e2b96f;
+    }
+
+    .f1-body {
+        flex-grow: 1;
+        padding: 16px 18px;
+        overflow-y: auto;
+        flex-direction: column;
+    }
+
+    .f1-section-title {
+        color: #e2b96f;
+        font-size: 14px;
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+
+    .f1-rules {
+        flex-direction: column;
+        gap: 6px;
+        padding-left: 20px;
+    }
+
+    .f1-rules li {
+        color: #ddd;
+        font-size: 13px;
+    }
+
+    .f1-search-row {
+        margin-bottom: 8px;
+    }
+
+    .f1-search {
+        width: 280px;
+        padding: 5px 10px;
+        background-color: #0f3460;
+        border: 1px solid #444;
+        border-radius: 4px;
+        color: white;
+        font-size: 13px;
+    }
+
+    .f1-cmd-list {
+        flex-direction: column;
+        gap: 4px;
+        overflow-y: auto;
+    }
+
+    .f1-cmd-row {
+        flex-direction: row;
+        padding: 5px 8px;
+        background-color: #16213e;
+        border-radius: 3px;
+    }
+
+    .f1-cmd-name {
+        color: #6ec6ff;
+        font-size: 13px;
+        min-width: 220px;
+        font-family: Consolas;
+    }
+
+    .f1-cmd-desc {
+        color: #ccc;
+        font-size: 13px;
+    }
+
+    .f1-job-list {
+        flex-direction: column;
+        gap: 6px;
+        overflow-y: auto;
+    }
+
+    .f1-job-row {
+        flex-direction: row;
+        align-items: center;
+        gap: 10px;
+        padding: 4px 0;
+    }
+
+    .f1-job-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+    }
+
+    .f1-job-name {
+        color: white;
+        font-size: 13px;
+        font-weight: bold;
+        min-width: 140px;
+    }
+
+    .f1-job-salary {
+        color: #a8e6a3;
+        font-size: 12px;
+    }
+
+    .f1-job-limit {
+        color: #999;
+        font-size: 12px;
+    }
+
+    .f1-job-desc {
+        color: #aaa;
+        font-size: 12px;
+        padding-left: 22px;
+        margin-top: -2px;
+    }
+</style>
