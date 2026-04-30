@@ -36,9 +36,15 @@ public static class MotdSystem
 
 	private static void ShowMotdToPlayer( Connection ply )
 	{
-		// Lua: drawMOTD(html) → MsgC(...) в консоль
-		// Здесь — нотификация (HUD не имеет MOTD-окна; F1 заменяет его).
-		ply.Notify( _motd, NotifyType.Info, 12f );
+		// Lua: drawMOTD(html) → открыть панель на клиенте
+		ShowMotdRpc( ply );
+	}
+
+	/// <summary>Открыть MotdPanel.razor на клиенте.</summary>
+	[Rpc.Owner]
+	public static void ShowMotdRpc( Connection target )
+	{
+		MotdPanel.Open();
 	}
 
 	// ─── Команды ──────────────────────────────────────────────────────────────

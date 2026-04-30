@@ -109,6 +109,53 @@
                 </div>
             }
         </div>
+
+        @* ── Список печатающих игроков (chatindicator) ───────────────── *@
+        @* Lua: gamemode/modules/chatindicator/cl_init.lua — индикатор печати *@
+        @{
+            var typingPlayers = GetTypingPlayers();
+        }
+        @if ( typingPlayers.Count > 0 )
+        {
+            <div class="hud-typing-list">
+                @foreach ( var name in typingPlayers )
+                {
+                    <div class="hud-typing-item">💬 @name печатает...</div>
+                }
+            </div>
+        }
+
+        @* ── Оверлей сна (sleep) ────────────────────────────────────── *@
+        @* Lua: gamemode/modules/sleep/sv_sleep.lua — black screen *@
+        @{
+            var localComp = LocalPlayer.GetDarkRPComponent();
+        }
+        @if ( localComp is not null && localComp.IsSleeping )
+        {
+            <div class="hud-sleep-overlay">
+                <div class="hud-sleep-text">💤 Zzz...</div>
+                <div class="hud-sleep-hint">/wake чтобы проснуться</div>
+            </div>
+        }
+
+        @* ── Оверлей смерти (deathpov) ──────────────────────────────── *@
+        @* Lua: gamemode/modules/deathpov/cl_init.lua *@
+        @if ( localComp is not null && localComp.IsDead )
+        {
+            <div class="hud-death-overlay">
+                <div class="hud-death-text">ВЫ МЕРТВЫ</div>
+                <div class="hud-death-hint">Ожидайте возрождения...</div>
+            </div>
+        }
+
+        @* ── Оверлей AFK ─────────────────────────────────────────────── *@
+        @if ( localComp is not null && localComp.IsAFK )
+        {
+            <div class="hud-afk-overlay">
+                <div class="hud-afk-text">AFK</div>
+                <div class="hud-afk-hint">Двигайтесь или /afk чтобы вернуться</div>
+            </div>
+        }
     }
 </root>
 
@@ -117,16 +164,121 @@
 
     private float GetHealthPercent()
     {
-        // TODO: получить HP через PlayerController (phase-2)
+        // TODO (phase-7+): получить HP через PlayerController.HealthComponent
         return 100f;
     }
 
     private float GetArmorPercent()
     {
-        // TODO: получить Armor через PlayerController (phase-2)
+        // TODO (phase-7+): получить Armor через PlayerController.ArmorComponent
         return 0f;
+    }
+
+    /// <summary>
+    /// Список ников игроков, у которых [Sync] IsTyping == true (исключая себя).
+    /// Lua: gamemode/modules/chatindicator/cl_init.lua
+    /// </summary>
+    private System.Collections.Generic.List<string> GetTypingPlayers()
+    {
+        var list = new System.Collections.Generic.List<string>();
+        var local = LocalPlayer;
+        foreach ( var comp in Game.ActiveScene.GetAllComponents<DarkRPPlayerComponent>() )
+        {
+            if ( !comp.IsTyping ) continue;
+            var owner = comp.Network.Owner;
+            if ( owner is null || owner == local ) continue;
+            list.Add( owner.DisplayName );
+        }
+        return list;
     }
 
     private static string ColorToHex( Color c ) =>
         $"#{(int)(c.r * 255):X2}{(int)(c.g * 255):X2}{(int)(c.b * 255):X2}";
 }
+
+<style>
+    /* ── Список печатающих игроков ─────────────────────────── */
+    .hud-typing-list {
+        position: absolute;
+        bottom: 280px;
+        left: 30px;
+        flex-direction: column;
+        gap: 2px;
+        font-family: Roboto;
+        font-size: 13px;
+        opacity: 0.85;
+    }
+    .hud-typing-item {
+        background-color: rgba(0, 0, 0, 0.55);
+        color: #ffd56b;
+        padding: 3px 8px;
+        border-radius: 3px;
+    }
+
+    /* ── Sleep overlay ─────────────────────────────────────── */
+    .hud-sleep-overlay {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background-color: rgba(0, 0, 0, 0.85);
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        font-family: Roboto;
+    }
+    .hud-sleep-text {
+        font-size: 96px;
+        color: #b8c5ff;
+        font-weight: bold;
+        text-shadow: 0 0 20px rgba(135, 165, 255, 0.6);
+    }
+    .hud-sleep-hint {
+        font-size: 18px;
+        color: #888;
+        margin-top: 20px;
+    }
+
+    /* ── Death overlay ─────────────────────────────────────── */
+    .hud-death-overlay {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background-color: rgba(80, 0, 0, 0.65);
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        font-family: Roboto;
+    }
+    .hud-death-text {
+        font-size: 84px;
+        color: #ff3b3b;
+        font-weight: bold;
+        letter-spacing: 8px;
+        text-shadow: 0 0 30px rgba(255, 0, 0, 0.8);
+    }
+    .hud-death-hint {
+        font-size: 18px;
+        color: #ffaaaa;
+        margin-top: 16px;
+    }
+
+    /* ── AFK overlay ───────────────────────────────────────── */
+    .hud-afk-overlay {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background-color: rgba(40, 40, 40, 0.55);
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        font-family: Roboto;
+    }
+    .hud-afk-text {
+        font-size: 120px;
+        color: #ffcc00;
+        font-weight: bold;
+        letter-spacing: 12px;
+    }
+    .hud-afk-hint {
+        font-size: 16px;
+        color: #cccccc;
+        margin-top: 14px;
+    }
+</style>
