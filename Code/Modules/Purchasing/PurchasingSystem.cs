@@ -297,9 +297,11 @@ public static class PurchasingSystem
 		var go = EntitySpawner.SpawnPrimitive( pos, entity.EntityClass, ply,
 			color, new Vector3( 0.4f, 0.4f, 0.3f ) );
 
-		// Money printer — добавляем компонент печати
+		// Привязываем специализированные компоненты по EntityClass
 		if ( entity.EntityClass == "money_printer" )
 			go.Components.Create<MoneyPrinterComponent>();
+		else if ( entity.EntityClass == "tip_jar" )
+			go.Components.Create<TipJarComponent>().SetOwner( ply );
 
 		ply.Notify( LanguageSystem.Get( "you_bought", entity.Name, DarkRP.FormatMoney( entity.Price ) ), NotifyType.Info );
 		Hook.Run( "PlayerBoughtEntity", ply, entity );

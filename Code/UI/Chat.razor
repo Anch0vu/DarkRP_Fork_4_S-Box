@@ -76,6 +76,8 @@
         _input = "";
         StateHasChanged();
         _entry?.Focus();
+        // Lua: hook.Add("StartChat", "DarkRP_ChatIndicator", ...)
+        ChatIndicatorSystem.SetTypingRpc( true );
     }
 
     private void Close()
@@ -83,6 +85,8 @@
         _isOpen = false;
         _input = "";
         StateHasChanged();
+        // Lua: hook.Add("FinishChat", "DarkRP_ChatIndicator", ...)
+        ChatIndicatorSystem.SetTypingRpc( false );
     }
 
     private void OnSubmit()

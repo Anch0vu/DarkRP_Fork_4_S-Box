@@ -284,11 +284,26 @@ public sealed class DoorManager : GameObjectSystem
 
 	/// <summary>
 	/// Raycast от взгляда игрока — найти дверь перед ним.
-	/// Lua: util.TraceLine + tr.Entity
-	/// TODO: подключить к реальному PlayerController.EyeRay (phase-2)
+	/// Lua: util.TraceLine(trace).Entity:GetComponent(DoorComponent)
 	/// </summary>
-	private static DoorComponent? GetLookedAtDoor( Connection ply ) =>
-		null; // TODO: реализовать через PlayerController.EyeRay (phase-2)
+	private static DoorComponent? GetLookedAtDoor( Connection ply )
+	{
+		var pawn = ply.Pawn;
+		if ( pawn is null ) return null;
+
+		// Приблизительная позиция глаз + направление взгляда
+		var eyePos = pawn.WorldPosition + Vector3.Up * 64f;
+		var forward = pawn.WorldRotation.Forward;
+
+		var tr = Game.ActiveScene.Trace
+			.Ray( new Ray( eyePos, forward ), 200f )
+			.WithoutTags( "player", "trigger" )
+			.Run();
+
+		if ( !tr.Hit || tr.GameObject is null ) return null;
+
+		return tr.GameObject.GetComponent<DoorComponent>( true );
+	}
 
 	private static int GetDoorPrice( DoorComponent? _ ) =>
 		500; // TODO: Config.DoorPrice (phase-2)

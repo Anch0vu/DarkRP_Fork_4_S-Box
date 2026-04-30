@@ -1,6 +1,6 @@
-# Module Status (Phase 0.4 / 0.5 / 1 / 2 / 3 / 4)
+# Module Status (Phase 0.4 / 0.5 / 1 / 2 / 3 / 4 / 5)
 
-> Последнее обновление: **phase-4** (spawned entities + money_printer + F4 buy RPC)
+> Последнее обновление: **phase-5** (hungermod, afk, sleep, tipjar, logging, chatindicator, playerscale, door raycast)
 > Статусы: `pending` | `in_progress` | `done` | `blocked` | `DROP`
 
 ---
@@ -21,21 +21,21 @@
 | `hitmenu` | 1107 | 7 | **done** (phase-3: /hitprice, /requesthit, /cancelhit + hooks) | M | 5 | base, money |
 | `voting` | 720 | 5 | **done** (phase-3: /demote vote, /forcecancelvote) | M | 5 | base |
 | `language` | 879 | 3 | **done** (phase-2: en.json + ru.json) | S | 5 | — |
-| `tipjar` | 684 | 4 | pending | S | 5 | base, money |
-| `hungermod` | 566 | 8 | pending | S | 6 | base |
-| `positions` | 450 | 5 | pending | S | 6 | base |
+| `tipjar` | 684 | 4 | **done** (phase-5: TipJarComponent + /donate) | S | 5 | base, money |
+| `hungermod` | 566 | 8 | **done** (phase-5: HungerSystem + /buyfood) | S | 6 | base |
+| `positions` | 450 | 5 | **in_progress** (jailpos done; job spawn positions pending) | S | 6 | base |
 | `fspectate` | 687 | 3 | pending | S | 7 | base |
 | `events` | 237 | 2 | pending | S | 7 | base |
 | `animations` | 189 | 2 | pending | S | 7 | base |
-| `afk` | 230 | 4 | pending | S | 7 | base |
-| `sleep` | 302 | 3 | pending | S | 7 | base |
+| `afk` | 230 | 4 | **done** (phase-5: AFKSystem + auto-demote + salary freeze) | S | 7 | base |
+| `sleep` | 302 | 3 | **done** (phase-5: SleepSystem /sleep /wake, без ragdoll) | S | 7 | base |
 | `hobo` | 40 | 2 | pending | S | 7 | base, jobs |
 | `medic` | 16 | 2 | pending | S | 7 | base, jobs |
 | `deathpov` | 44 | 1 | pending | S | 7 | base |
-| `chatindicator` | 88 | 2 | pending | S | 7 | chat |
+| `chatindicator` | 88 | 2 | **done** (phase-5: IsTyping [Sync] + ChatIndicatorSystem.SetTypingRpc) | S | 7 | chat |
 | `darkrpmessages` | 26 | 1 | pending | S | 7 | — |
-| `playerscale` | 33 | 2 | pending | S | 7 | base |
-| `logging` | 97 | 3 | pending | S | 7 | base |
+| `playerscale` | 33 | 2 | **done** (phase-5: PlayerScaleSystem + /scale + /resetscale) | S | 7 | base |
+| `logging` | 97 | 3 | **done** (phase-5: LoggingSystem + /logs + memory buffer + hooks) | S | 7 | base |
 | `fadmin` | 7951 | 87 | **DROP** | — | — | — |
 | `fpp` | 4577 | 13 | **DROP** | — | — | — |
 | `dermaskin` | 249 | 2 | **DROP** | — | — | — |
@@ -325,10 +325,17 @@ digraph DarkRP_Modules {
 [x] hitmenu      — phase-3: HitSystem.cs (hitprice/requesthit/cancelhit + PlayerDeath hooks)
 [x] voting       — phase-3: VotingSystem.cs (/demote vote + /forcecancelvote)
 [x] mayor/agenda — phase-3: AgendaSystem.cs (agenda/addagenda/lockdown/lottery/enterlottery)
-[ ] hungermod    — phase-4
-[ ] tipjar       — phase-4
-[ ] positions    — интегрировано в PoliceSystem (/jailpos)
-[ ] остальные    — phase-4+
+[x] hungermod    — phase-5: HungerSystem.cs (decay tick + /buyfood)
+[x] tipjar       — phase-5: TipJarComponent.cs (IPressable + /donate)
+[x] afk          — phase-5: AFKSystem.cs (/afk + auto-demote + salary=0)
+[x] sleep        — phase-5: SleepSystem.cs (/sleep /wake, IsSleeping [Sync])
+[x] chatindicator — phase-5: ChatIndicatorSystem.cs (IsTyping [Sync])
+[x] playerscale  — phase-5: PlayerScaleSystem.cs (/scale /resetscale)
+[x] logging      — phase-5: LoggingSystem.cs (/logs + memory buffer)
+[x] doorsystem raycast — phase-5: GetLookedAtDoor via Scene.Trace.Ray
+[ ] positions (job spawn) — pending
+[ ] fspectate    — pending
+[ ] hobo, medic, deathpov, events, animations, darkrpmessages — pending
 ```
 
 ---
@@ -370,3 +377,20 @@ digraph DarkRP_Modules {
 | `Code/Modules/Entities/PickupComponents.cs` | SpawnedMoney, SpawnedWeapon, SpawnedShipment, SpawnedAmmo (IPressable) | `entities/spawned_*/init.lua` |
 | `PurchasingSystem.CmdBuyEntity` | `/buyentity` — покупка `BuyableEntity` (money_printer и т.д.) | `sv_purchasing.lua` |
 | `F4Menu.razor` | `[Rpc.Host] SelectJobRpc / BuyEntityRpc / BuyShipmentRpc` — реальные вызовы | `cl_jobstab.lua`, `cl_entitiestab.lua` |
+
+---
+
+## Phase-5 артефакты
+
+| Файл | Назначение | Lua source |
+|---|---|---|
+| `Code/Systems/AFKSystem.cs` | `/afk` переключатель, авто-демоут (5 мин без движения), заморозка зарплаты | `afk/sv_afk.lua` |
+| `Code/Modules/HungerMod/HungerSystem.cs` | Тик голода каждые 10с, урон при 0, `/buyfood <name>` | `hungermod/sv_hungermod.lua`, `sh_commands.lua` |
+| `Code/Modules/Sleep/SleepSystem.cs` | `/sleep` `/wake`: `IsSleeping [Sync]`, кулдаун 5с, хук PlayerChangedJob | `sleep/sv_sleep.lua` |
+| `Code/Modules/TipJar/TipJarComponent.cs` | `TipJarComponent` (IPressable) + `TipJarSystem.CmdDonate` (`/donate`) | `tipjar/sv_communication.lua` |
+| `Code/Systems/LoggingSystem.cs` | Memory buffer 500 записей, `/logs`, хуки Connect/Disconnect/JobChange | `logging/sv_logging.lua` |
+| `Code/Modules/Chat/ChatIndicatorSystem.cs` | `SetTypingRpc` → `IsTyping [Sync]`; вызывается из Chat.razor Open/Close | `chatindicator/cl_init.lua` |
+| `Code/Modules/PlayerScale/PlayerScaleSystem.cs` | Admin `/scale <player> <x>` + `/resetscale`; применяет к `Pawn.WorldScale` | `playerscale/sv_playerscale.lua` |
+| `DoorManager.GetLookedAtDoor` | Реальный raycast через `Scene.Trace.Ray` (ранее возвращал null) | `doorsystem/sv_doors.lua` |
+| `DarkRPPlayerComponent` | Добавлены `[Sync] IsSleeping`, `[Sync] IsTyping` | `sh_entityvars.lua` |
+| `PurchasingSystem.CmdBuyEntity` | Обработка `tip_jar` EntityClass → `TipJarComponent.SetOwner` | `sv_purchasing.lua` |
