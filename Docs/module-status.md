@@ -1,6 +1,6 @@
-# Module Status (Phase 0.4 / 0.5 / 1 / 2 / 3 / 4 / 5 / 6 / 7)
+# Module Status (Phase 0.4 / 0.5 / 1 / 2 / 3 / 4 / 5 / 6 / 7 / 8)
 
-> Последнее обновление: **phase-7** (HUD overlays: sleep, death, AFK, typing list + MOTD modal panel)
+> Последнее обновление: **phase-8** (HealthComponent integration: real HP/AP в HUD, /heal лечит, голод бьёт, /buyarmor)
 > Статусы: `pending` | `in_progress` | `done` | `blocked` | `DROP`
 
 ---
@@ -420,3 +420,17 @@ digraph DarkRP_Modules {
 | `Code/UI/HUD.razor` (extended) | Оверлеи: sleep (Zzz), death (red), AFK (yellow); список печатающих игроков | `chatindicator/cl_init.lua`, `sleep/sv_sleep.lua`, `deathpov/cl_init.lua`, `afk/sv_afk.lua` |
 | `Code/UI/MotdPanel.razor` | Полноэкранная модальная панель MOTD; открывается через `[Rpc.Owner] ShowMotdRpc` | `darkrpmessages/cl_darkrpmessage.lua` |
 | `MotdSystem.ShowMotdToPlayer` | Теперь вызывает `ShowMotdRpc(ply)` — открывает MotdPanel на клиенте | `cl_darkrpmessage.lua` |
+
+---
+
+## Phase-8 артефакты
+
+| Файл | Назначение | Lua source |
+|---|---|---|
+| `Code/Player/ArmorComponent.cs` | `[Sync] Armor`, `MaxArmor`; `AbsorbDamage()` 80% поглощение по Source-like модели | `sv_gamemode_functions.lua` (Armor refresh) |
+| `ArmorPurchase.CmdBuyArmor` | `/buyarmor` — покупка 100 AP за $250 | `sv_purchasing.lua` (armor) |
+| `PlayerExtensions` | `GetHealth/SetHealth/Heal/Damage`, `GetArmor/SetArmor` через `HealthComponent`/`ArmorComponent` | `sh_money.lua`, `sh_init.lua` |
+| `HUD.razor` | Реальный процент HP/AP вместо TODO-100/0 | `cl_hud.lua` |
+| `MedicSystem.CmdHeal` | Реально лечит через `target.Heal(50)` (ранее только нотификация) | `medic/sh_init.lua` |
+| `HungerSystem` | При Hunger=0 наносит реальный урон через `Damage(StarvingDamage)` | `hungermod/sv_hungermod.lua` |
+| `GamemodeSystem.OnPlayerSpawned` | Создаёт `ArmorComponent` на пешке если его нет | `sv_gamemode_functions.lua` |

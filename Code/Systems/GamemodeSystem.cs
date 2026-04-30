@@ -67,6 +67,11 @@ public sealed class GamemodeSystem : GameObjectSystem
 	[GameEvent.Player.Spawned]
 	private static void OnPlayerSpawned( PlayerController ply )
 	{
+		// Гарантируем наличие ArmorComponent на пешке (создаём, если нет)
+		// Lua: ply:SetArmor(0) при спавне
+		if ( ply.GameObject.GetComponent<ArmorComponent>() is null )
+			ply.GameObject.Components.Create<ArmorComponent>();
+
 		// Lua: hook.Run("PlayerSpawn", ply)
 		Hook.Run( "PlayerSpawn", ply.Connection );
 	}
@@ -75,6 +80,7 @@ public sealed class GamemodeSystem : GameObjectSystem
 	private static void OnPlayerKilled( PlayerController ply )
 	{
 		// Lua: hook.Run("PlayerDeath", ply, inflictor, attacker)
-		Hook.Run( "PlayerDeath", ply.Connection );
+		// TODO (phase-9+): извлечь attacker из DamageInfo через S&Box hook
+		Hook.Run( "PlayerDeath", ply.Connection, (Connection?)null );
 	}
 }
