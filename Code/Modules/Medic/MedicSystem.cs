@@ -68,10 +68,12 @@ public static class MedicSystem
 			target.Notify( $"Вы заплатили {DarkRP.FormatMoney( HealPrice )} за лечение.", NotifyType.Money );
 		}
 
-		// TODO (phase-7+): реальный HealthComponent.Health += HealAmount
-		// Пока — нотификация
-		target.Notify( $"Вы вылечены на {HealAmount} HP медиком {ply.DisplayName}.", NotifyType.Info );
-		ply.Notify( $"Вы вылечили {target.DisplayName} (+{HealAmount} HP).", NotifyType.Info );
+		// Phase-8: реальное лечение через HealthComponent
+		target.Heal( HealAmount );
+		var newHp = (int)target.GetHealth();
+
+		target.Notify( $"Вы вылечены медиком {ply.DisplayName} (+{HealAmount} HP, теперь {newHp}).", NotifyType.Info );
+		ply.Notify( $"Вы вылечили {target.DisplayName} до {newHp} HP.", NotifyType.Info );
 
 		Hook.Run( "playerHealed", ply, target, HealAmount );
 	}

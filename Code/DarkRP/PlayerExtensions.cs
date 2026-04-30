@@ -113,6 +113,64 @@ public static class PlayerExtensions
 		DarkRP.SendNotification( ply, message, type, duration );
 	}
 
+	// ────────────────────────────────── Здоровье / Health ────────────────────
+
+	/// <summary>Lua: ply:Health()</summary>
+	public static float GetHealth( this Connection ply )
+	{
+		var hc = ply.Pawn?.GetComponent<HealthComponent>();
+		return hc?.Health ?? 0f;
+	}
+
+	/// <summary>Lua: ply:GetMaxHealth()</summary>
+	public static float GetMaxHealth( this Connection ply )
+	{
+		var hc = ply.Pawn?.GetComponent<HealthComponent>();
+		return hc?.MaxHealth ?? 100f;
+	}
+
+	/// <summary>Lua: ply:SetHealth(hp)</summary>
+	public static void SetHealth( this Connection ply, float hp )
+	{
+		var hc = ply.Pawn?.GetComponent<HealthComponent>();
+		if ( hc is null ) return;
+		hc.Health = System.Math.Clamp( hp, 0f, hc.MaxHealth );
+	}
+
+	/// <summary>Залечить игрока на amount HP (не выше MaxHealth).</summary>
+	public static void Heal( this Connection ply, float amount )
+	{
+		var hc = ply.Pawn?.GetComponent<HealthComponent>();
+		if ( hc is null ) return;
+		hc.Health = System.Math.Min( hc.Health + amount, hc.MaxHealth );
+	}
+
+	/// <summary>Нанести урон игроку. Lua: ply:TakeDamage(amount, attacker)</summary>
+	public static void Damage( this Connection ply, float amount, Connection? attacker = null )
+	{
+		var armorComp = ply.Pawn?.GetComponent<ArmorComponent>();
+		if ( armorComp is not null )
+			amount = armorComp.AbsorbDamage( amount );
+
+		var hc = ply.Pawn?.GetComponent<HealthComponent>();
+		if ( hc is null ) return;
+		hc.Health = System.Math.Max( 0f, hc.Health - amount );
+	}
+
+	// ────────────────────────────────── Броня / Armor ──────────────────────────
+
+	/// <summary>Lua: ply:Armor()</summary>
+	public static int GetArmor( this Connection ply ) =>
+		ply.Pawn?.GetComponent<ArmorComponent>()?.Armor ?? 0;
+
+	/// <summary>Lua: ply:SetArmor(amount)</summary>
+	public static void SetArmor( this Connection ply, int amount )
+	{
+		var ac = ply.Pawn?.GetComponent<ArmorComponent>();
+		if ( ac is null ) return;
+		ac.SetArmor( amount );
+	}
+
 	// ────────────────────────────────── Внутреннее ────────────────────────────
 
 	internal static DarkRPPlayerComponent? GetDarkRPComponent( this Connection ply )

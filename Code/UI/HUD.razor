@@ -1,5 +1,6 @@
 @* Source: gamemode/modules/hud/cl_hud.lua *@
 @* Lua: hook.Add("HUDPaint", ...) — заменено на Razor компонент *@
+@using System;
 @using Sandbox;
 @using Sandbox.UI;
 @using SboxDarkRP;
@@ -164,14 +165,20 @@
 
     private float GetHealthPercent()
     {
-        // TODO (phase-7+): получить HP через PlayerController.HealthComponent
-        return 100f;
+        var ply = LocalPlayer;
+        if ( ply is null ) return 0f;
+        var max = ply.GetMaxHealth();
+        if ( max <= 0f ) return 0f;
+        return MathF.Round( ply.GetHealth() / max * 100f );
     }
 
     private float GetArmorPercent()
     {
-        // TODO (phase-7+): получить Armor через PlayerController.ArmorComponent
-        return 0f;
+        var ply = LocalPlayer;
+        if ( ply is null ) return 0f;
+        var ac = ply.Pawn?.GetComponent<ArmorComponent>();
+        if ( ac is null || ac.MaxArmor <= 0 ) return 0f;
+        return MathF.Round( (float)ac.Armor / ac.MaxArmor * 100f );
     }
 
     /// <summary>

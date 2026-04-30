@@ -44,7 +44,8 @@ public sealed class HungerSystem : GameObjectSystem
 			if ( comp.Hunger <= 0f )
 			{
 				// Lua: ply:TakeDamage(5, ...) — урон голодом
-				// TODO (phase-5+): вызвать HealthComponent.TakeDamage когда будет PlayerController
+				// Phase-8: реальный урон через HealthComponent
+				conn.Damage( StarvingDamage );
 				conn.Notify( "Вы умираете от голода!", NotifyType.Error, 4f );
 				Hook.Run( "playerStarving", conn );
 			}
