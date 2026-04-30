@@ -1,0 +1,102 @@
+@* Source: gamemode/modules/darkrpmessages/cl_darkrpmessage.lua *@
+@* Lua: drawMOTD(html) — открывалось в HTML-окне *@
+@using Sandbox;
+@using Sandbox.UI;
+@using SboxDarkRP;
+@inherits PanelComponent
+
+<root>
+    @if ( IsOpen )
+    {
+        <div class="motd-overlay" onclick="@Close">
+            <div class="motd-window" onclick:stopPropagation="true">
+                <div class="motd-header">
+                    <span class="motd-title">📜 Сообщение дня</span>
+                    <button class="motd-close" onclick="@Close">✕</button>
+                </div>
+                <div class="motd-body">
+                    @MotdSystem.GetMotd()
+                </div>
+                <div class="motd-footer">
+                    Закрыть: Esc
+                </div>
+            </div>
+        </div>
+    }
+</root>
+
+@code {
+    public static bool IsOpen { get; private set; } = false;
+
+    public static void Open() => IsOpen = true;
+    public static void Close() => IsOpen = false;
+
+    protected override void OnUpdate()
+    {
+        // Закрыть на Esc
+        if ( IsOpen && Input.EscapePressed )
+            Close();
+    }
+
+    protected override int BuildHash() => System.HashCode.Combine( IsOpen );
+}
+
+<style>
+    .motd-overlay {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background-color: rgba(0, 0, 0, 0.7);
+        align-items: center;
+        justify-content: center;
+        font-family: Roboto;
+    }
+
+    .motd-window {
+        flex-direction: column;
+        width: 600px;
+        max-height: 70%;
+        background-color: rgba(20, 20, 30, 0.96);
+        border: 2px solid #ffcc00;
+        border-radius: 6px;
+    }
+
+    .motd-header {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 18px;
+        background-color: rgba(255, 204, 0, 0.15);
+        border-bottom: 1px solid rgba(255, 204, 0, 0.4);
+    }
+
+    .motd-title {
+        color: #ffcc00;
+        font-weight: bold;
+        font-size: 18px;
+    }
+
+    .motd-close {
+        color: white;
+        background-color: transparent;
+        border: none;
+        font-size: 18px;
+        cursor: pointer;
+    }
+
+    .motd-body {
+        padding: 22px 24px;
+        color: #e6e6e6;
+        font-size: 15px;
+        line-height: 1.55;
+        white-space: pre-wrap;
+        overflow-y: scroll;
+    }
+
+    .motd-footer {
+        padding: 8px 18px;
+        text-align: right;
+        color: #888;
+        font-size: 12px;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+</style>

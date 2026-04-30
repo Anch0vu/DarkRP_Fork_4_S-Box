@@ -1,6 +1,6 @@
-# Module Status (Phase 0.4 / 0.5 / 1 / 2 / 3 / 4 / 5 / 6)
+# Module Status (Phase 0.4 / 0.5 / 1 / 2 / 3 / 4 / 5 / 6 / 7)
 
-> Последнее обновление: **phase-6** (spectate, hobo, medic, deathpov, events, animations, motd, spawn positions)
+> Последнее обновление: **phase-7** (HUD overlays: sleep, death, AFK, typing list + MOTD modal panel)
 > Статусы: `pending` | `in_progress` | `done` | `blocked` | `DROP`
 
 ---
@@ -410,3 +410,13 @@ digraph DarkRP_Modules {
 | `Code/Modules/Messages/MotdSystem.cs` | MOTD на InitialSpawn + `/motd` + admin `/setmotd` | `darkrpmessages/cl_darkrpmessage.lua` |
 | `Code/Modules/Positions/SpawnPositionSystem.cs` | Кастомные позиции спавна для работ + `/setspawn /addspawn /removespawn` (admin) | `positions/sv_spawnpos.lua` |
 | `DarkRPPlayerComponent` | Добавлены `[Sync] IsDead`, `[Sync] DeathPosition` | `sh_entityvars.lua` |
+
+---
+
+## Phase-7 артефакты
+
+| Файл | Назначение | Lua source |
+|---|---|---|
+| `Code/UI/HUD.razor` (extended) | Оверлеи: sleep (Zzz), death (red), AFK (yellow); список печатающих игроков | `chatindicator/cl_init.lua`, `sleep/sv_sleep.lua`, `deathpov/cl_init.lua`, `afk/sv_afk.lua` |
+| `Code/UI/MotdPanel.razor` | Полноэкранная модальная панель MOTD; открывается через `[Rpc.Owner] ShowMotdRpc` | `darkrpmessages/cl_darkrpmessage.lua` |
+| `MotdSystem.ShowMotdToPlayer` | Теперь вызывает `ShowMotdRpc(ply)` — открывает MotdPanel на клиенте | `cl_darkrpmessage.lua` |
