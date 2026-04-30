@@ -1,6 +1,6 @@
-# Module Status (Phase 0.4 / 0.5 / 1 / 2 / 3 / 4 / 5)
+# Module Status (Phase 0.4 / 0.5 / 1 / 2 / 3 / 4 / 5 / 6)
 
-> Последнее обновление: **phase-5** (hungermod, afk, sleep, tipjar, logging, chatindicator, playerscale, door raycast)
+> Последнее обновление: **phase-6** (spectate, hobo, medic, deathpov, events, animations, motd, spawn positions)
 > Статусы: `pending` | `in_progress` | `done` | `blocked` | `DROP`
 
 ---
@@ -23,17 +23,17 @@
 | `language` | 879 | 3 | **done** (phase-2: en.json + ru.json) | S | 5 | — |
 | `tipjar` | 684 | 4 | **done** (phase-5: TipJarComponent + /donate) | S | 5 | base, money |
 | `hungermod` | 566 | 8 | **done** (phase-5: HungerSystem + /buyfood) | S | 6 | base |
-| `positions` | 450 | 5 | **in_progress** (jailpos done; job spawn positions pending) | S | 6 | base |
-| `fspectate` | 687 | 3 | pending | S | 7 | base |
-| `events` | 237 | 2 | pending | S | 7 | base |
-| `animations` | 189 | 2 | pending | S | 7 | base |
+| `positions` | 450 | 5 | **done** (phase-6: SpawnPositionSystem + /setspawn /addspawn /removespawn; jailpos в PoliceSystem) | S | 6 | base |
+| `fspectate` | 687 | 3 | **done** (phase-6: SpectateSystem + /spectate /stopspectate) | S | 7 | base |
+| `events` | 237 | 2 | **done** (phase-6: EventsSystem + earthquakes + meteor storm + admin commands) | S | 7 | base |
+| `animations` | 189 | 2 | **done** (phase-6: AnimationsSystem + /gesture /dance /wave /bow /laugh) | S | 7 | base |
 | `afk` | 230 | 4 | **done** (phase-5: AFKSystem + auto-demote + salary freeze) | S | 7 | base |
 | `sleep` | 302 | 3 | **done** (phase-5: SleepSystem /sleep /wake, без ragdoll) | S | 7 | base |
-| `hobo` | 40 | 2 | pending | S | 7 | base, jobs |
-| `medic` | 16 | 2 | pending | S | 7 | base, jobs |
-| `deathpov` | 44 | 1 | pending | S | 7 | base |
+| `hobo` | 40 | 2 | **done** (phase-6: HoboSystem + /hobosound + job hook) | S | 7 | base, jobs |
+| `medic` | 16 | 2 | **done** (phase-6: MedicSystem + /heal command) | S | 7 | base, jobs |
+| `deathpov` | 44 | 1 | **done** (phase-6: DeathPOVSystem + IsDead/DeathPosition [Sync]) | S | 7 | base |
 | `chatindicator` | 88 | 2 | **done** (phase-5: IsTyping [Sync] + ChatIndicatorSystem.SetTypingRpc) | S | 7 | chat |
-| `darkrpmessages` | 26 | 1 | pending | S | 7 | — |
+| `darkrpmessages` | 26 | 1 | **done** (phase-6: MotdSystem + /motd /setmotd) | S | 7 | — |
 | `playerscale` | 33 | 2 | **done** (phase-5: PlayerScaleSystem + /scale + /resetscale) | S | 7 | base |
 | `logging` | 97 | 3 | **done** (phase-5: LoggingSystem + /logs + memory buffer + hooks) | S | 7 | base |
 | `fadmin` | 7951 | 87 | **DROP** | — | — | — |
@@ -394,3 +394,19 @@ digraph DarkRP_Modules {
 | `DoorManager.GetLookedAtDoor` | Реальный raycast через `Scene.Trace.Ray` (ранее возвращал null) | `doorsystem/sv_doors.lua` |
 | `DarkRPPlayerComponent` | Добавлены `[Sync] IsSleeping`, `[Sync] IsTyping` | `sh_entityvars.lua` |
 | `PurchasingSystem.CmdBuyEntity` | Обработка `tip_jar` EntityClass → `TipJarComponent.SetOwner` | `sv_purchasing.lua` |
+
+---
+
+## Phase-6 артефакты
+
+| Файл | Назначение | Lua source |
+|---|---|---|
+| `Code/Modules/Spectate/SpectateSystem.cs` | Admin `/spectate <player>` `/stopspectate`, отслеживание spectator→target | `fspectate/sv_init.lua` |
+| `Code/Modules/Hobo/HoboSystem.cs` | `/hobosound` (зомби-стон в радиусе 600u) + хук PlayerChangedJob | `hobo/sv_hobo.lua` |
+| `Code/Modules/Medic/MedicSystem.cs` | `/heal [player]` — медик лечит за плату | `medic/sh_init.lua` |
+| `Code/Modules/DeathPOV/DeathPOVSystem.cs` | `IsDead`/`DeathPosition` [Sync] для оверлея на смерть | `deathpov/cl_init.lua` |
+| `Code/Modules/Events/EventsSystem.cs` | Случайные землетрясения, метеоритный шторм + `/enablestorm` `/disablestorm` `/earthquake` `/toggleearthquakes` | `events/sv_events.lua` |
+| `Code/Modules/Animations/AnimationsSystem.cs` | Реестр жестов + `/gesture /bow /dance /wave /laugh` (через `[Rpc.Broadcast]`) | `animations/sh_animations.lua` |
+| `Code/Modules/Messages/MotdSystem.cs` | MOTD на InitialSpawn + `/motd` + admin `/setmotd` | `darkrpmessages/cl_darkrpmessage.lua` |
+| `Code/Modules/Positions/SpawnPositionSystem.cs` | Кастомные позиции спавна для работ + `/setspawn /addspawn /removespawn` (admin) | `positions/sv_spawnpos.lua` |
+| `DarkRPPlayerComponent` | Добавлены `[Sync] IsDead`, `[Sync] DeathPosition` | `sh_entityvars.lua` |
