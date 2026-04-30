@@ -50,6 +50,24 @@ public sealed class DarkRPPlayerComponent : Component
 	/// <summary>Lua: playerSetAFK hook</summary>
 	[Sync] public bool IsAFK { get; set; } = false;
 
+	// ────────────────────── Сон ────────────────────────────
+	// Lua: player.Sleeping / DarkRP.toggleSleep
+	/// <summary>Игрок спит — замёрзшая модель, скрытый ввод. Lua: player.Sleeping</summary>
+	[Sync] public bool IsSleeping { get; set; } = false;
+
+	// ────────────────────── Индикатор печати ───────────────
+	// Lua: hook.Add("StartChat", "DarkRP_ChatIndicator", ...)
+	/// <summary>Игрок печатает в чат. Lua: cl_init.lua chatindicator</summary>
+	[Sync] public bool IsTyping { get; set; } = false;
+
+	// ────────────────────── Death POV ──────────────────────
+	// Lua: hook.Add("CalcView", "rp_deathPOV", ...)
+	/// <summary>Игрок мёртв (для оверлея). Lua: not ply:Alive()</summary>
+	[Sync] public bool IsDead { get; set; } = false;
+
+	/// <summary>Позиция тела при смерти (для камеры из ragdoll).</summary>
+	[Sync] public Vector3 DeathPosition { get; set; } = Vector3.Zero;
+
 	// ────────────────────── Голод (hungermod) ──────────────
 	// Lua: DarkRP.registerDarkRPVar("Energy", ...)
 	/// <summary>Уровень сытости 0-100. Lua: ply:getDarkRPVar("Energy")</summary>
